@@ -1,4 +1,3 @@
-
 services:
   ldap:
     image: dcm4che/slapd-dcm4chee:2.6.7-33.1
@@ -10,9 +9,10 @@ services:
       - "389:389"
     environment:
       STORAGE_DIR: /storage/fs1
+      LDAP_ROOTPASS: pacs
     volumes:
-      - /var/local/dcm4chee-arc/ldap:/var/lib/openldap/openldap-data
-      - /var/local/dcm4chee-arc/slapd.d:/etc/openldap/slapd.d
+      - ldap_data:/var/lib/openldap/openldap-data
+      - ldap_conf:/etc/openldap/slapd.d
   db:
     image: dcm4che/postgres-dcm4chee:17.1-33
     logging:
@@ -28,7 +28,7 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      - /var/local/dcm4chee-arc/db:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
   arc:
     image: dcm4che/dcm4chee-arc-psql:5.33.1
     logging:
@@ -45,6 +45,8 @@ services:
       - "2575:2575"
       - "12575:12575"
     environment:
+      LDAP_URL: ldap://ldap:389
+      LDAP_ROOTPASS: pacs
       POSTGRES_DB: pacsdb
       POSTGRES_USER: pacs
       POSTGRES_PASSWORD: pacs
@@ -56,5 +58,12 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
-      - /var/local/dcm4chee-arc/wildfly:/opt/wildfly/standalone
-      - /var/local/dcm4chee-arc/storage:/storage
+      - wildfly_data:/opt/wildfly/standalone
+      - storage_data:/storage
+
+volumes:
+  ldap_data:
+  ldap_conf:
+  db_data:
+  wildfly_data:
+  storage_data:

@@ -1,9 +1,8 @@
 package com.pacsdcm4che.pacsdcm4che_be.controller;
 
+import com.pacsdcm4che.pacsdcm4che_be.entity.Study;
 import com.pacsdcm4che.pacsdcm4che_be.service.DicomClientService;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -15,30 +14,31 @@ public class DicomController {
         this.dicomClientService = dicomClientService;
     }
 
-    @GetMapping("/client/studies")
-    public List<Object> getStudiesFromClient() {
-        return dicomClientService.getStudies();
-    }
-    @PostMapping("/upload")
-    public ResponseEntity<String> uploadDicom(@RequestParam("file") MultipartFile file) {
-        try {
-            String result = dicomClientService.uploadDicomFile(file);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
-        }
-    }
+//    @GetMapping("/client/studies")
+//    public ResponseEntity<String> getStudiesFromClient() {
+//        return ResponseEntity.ok(dicomClientService.getStudies());
+//    }
+//    @PostMapping("/upload")
+//    public ResponseEntity<String> uploadDicom(@RequestParam("file") MultipartFile file) {
+//        try {
+//            String result = dicomClientService.uploadDicomFile(file);
+//            System.out.println(result);
+//            return ResponseEntity.ok(result);
+//        } catch (Exception e) {
+//            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
+//        }
+//    }
     @GetMapping("/patients")
     public List<Object> getpatients() {
-        return dicomClientService.getpatients();
-    }
-    @GetMapping("/series")
-    public List<Object> getSeries() {
-        return dicomClientService.getSeries();
-    }
-    @GetMapping("/instances")
-    public List<Object> getInstances() {
-        return dicomClientService.getInstances();
+        return dicomClientService.getPatients();
     }
 
+    @GetMapping("/studies")
+    public List<Study> getStudies() {
+        return dicomClientService.getStudies();
+    }
+//    @GetMapping("/studiesmetadata")
+//    public ResponseEntity<String> getStudiesMetadata(@RequestParam String studyInstanceUID) {
+//        return ResponseEntity.ok(dicomClientService.getStudyMetadata(studyInstanceUID));
+//    }
 }

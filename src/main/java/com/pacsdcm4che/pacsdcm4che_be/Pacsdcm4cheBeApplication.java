@@ -9,5 +9,4 @@ public class Pacsdcm4cheBeApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(Pacsdcm4cheBeApplication.class, args);
 	}
-
 }
