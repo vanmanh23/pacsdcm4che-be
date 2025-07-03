@@ -25,91 +25,6 @@ public class DicomController {
     @Autowired
     private DicomClientService dicomClientService;
 
-//    @GetMapping("/patients")
-//    public ResponseEntity<List<Object>> getPatients() {
-//        try {
-//            List<Object> patients = dicomClientService.getPatients();
-//            return ResponseEntity.ok(patients);
-//        } catch (Exception e) {
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-//
-//    @GetMapping("/studies")
-//    public ResponseEntity<List<Study>> getStudies() {
-//        try {
-//            List<Study> studies = dicomClientService.getStudies();
-//            return ResponseEntity.ok(studies);
-//        } catch (Exception e) {
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-//
-//    @GetMapping("/series")
-//    public ResponseEntity<List<Series>> getSeries() {
-//        try {
-//            List<Series> series = dicomClientService.getSeries();
-//            return ResponseEntity.ok(series);
-//        } catch (Exception e) {
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-
-
-//    @GetMapping("/studies-with-tags")
-//    public ResponseEntity<List<Map<String, Object>>> getStudiesWithDicomTags() {
-//        try {
-//            List<Attributes> attributesList = dicomClientService.getStudiesWithDicomTags();
-//            List<Map<String, Object>> result = attributesList.stream()
-//                    .map(this::convertAttributesToMap)
-//                    .toList();
-//            return ResponseEntity.ok(result);
-//        } catch (Exception e) {
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-
-
-//    @GetMapping("/studies/{studyInstanceUID}")
-//    public ResponseEntity<Map<String, Object>> getStudyByUID(@PathVariable String studyInstanceUID) {
-//        try {
-//            Attributes attributes = dicomClientService.getStudyByUID(studyInstanceUID);
-//            Map<String, Object> result = convertAttributesToMap(attributes);
-//            return ResponseEntity.ok(result);
-//        } catch (Exception e) {
-//
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-
-//    @GetMapping("/studies/{studyInstanceUID}/series")
-//    public ResponseEntity<List<Map<String, Object>>> getSeriesByStudyUID(@PathVariable String studyInstanceUID) {
-//        try {
-//            List<Attributes> attributesList = dicomClientService.getSeriesByStudyUID(studyInstanceUID);
-//            List<Map<String, Object>> result = attributesList.stream()
-//                    .map(this::convertAttributesToMap)
-//                    .toList();
-//            return ResponseEntity.ok(result);
-//        } catch (Exception e) {
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-
-//    @GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances")
-//    public ResponseEntity<List<Map<String, Object>>> getInstancesBySeriesUID(
-//            @PathVariable String studyInstanceUID,
-//            @PathVariable String seriesInstanceUID) {
-//        try {
-//            List<Attributes> attributesList = dicomClientService.getInstancesBySeriesUID(studyInstanceUID, seriesInstanceUID);
-//            List<Map<String, Object>> result = attributesList.stream()
-//                    .map(this::convertAttributesToMap)
-//                    .toList();
-//            return ResponseEntity.ok(result);
-//        } catch (Exception e) {
-//            return ResponseEntity.internalServerError().build();
-//        }
-//    }
-
     @GetMapping("/studies/{studyInstanceUID}/tags")
     public ResponseEntity<Map<String, Object>> getStudyTags(@PathVariable String studyInstanceUID) {
         try {
@@ -129,8 +44,8 @@ public class DicomController {
             // Đọc các DICOM tags quan trọng
             tags.put("StudyInstanceUID", attributes.getString(Tag.StudyInstanceUID));
             tags.put("StudyID", attributes.getString(Tag.StudyID));
-            tags.put("StudyDate", attributes.getString(Tag.StudyDate));
-            tags.put("StudyTime", attributes.getString(Tag.StudyTime));
+            tags.put("StudyDate", attributes.getDate(Tag.StudyDate));
+            tags.put("StudyTime", attributes.getString(Tag.StudyTime));// nhơ getdate moi dung
             tags.put("AccessionNumber", attributes.getString(Tag.AccessionNumber));
             tags.put("StudyDescription", attributes.getString(Tag.StudyDescription));
             tags.put("ReferringPhysicianName", attributes.getString(Tag.ReferringPhysicianName));
@@ -140,7 +55,7 @@ public class DicomController {
             // Patient information
             tags.put("PatientName", attributes.getString(Tag.PatientName));
             tags.put("PatientID", attributes.getString(Tag.PatientID));
-            tags.put("PatientBirthDate", attributes.getString(Tag.PatientBirthDate));
+            tags.put("PatientBirthDate", attributes.getDate(Tag.PatientBirthDate));
             tags.put("PatientSex", attributes.getString(Tag.PatientSex));
             
             return ResponseEntity.ok(tags);
@@ -170,7 +85,7 @@ public class DicomController {
             tags.put("Modality", targetSeries.getString(Tag.Modality));
             tags.put("SeriesDescription", targetSeries.getString(Tag.SeriesDescription));
             tags.put("SeriesDate", targetSeries.getString(Tag.SeriesDate));
-            tags.put("SeriesTime", targetSeries.getString(Tag.SeriesTime));
+            tags.put("SeriesTime", targetSeries.getString(Tag.SeriesTime));// chú ý ngày tháng get date
 //            tags.put("NumberOfInstances", targetSeries.getInt(Tag.NumberOfInstances, 0));
             tags.put("BodyPartExamined", targetSeries.getString(Tag.BodyPartExamined));
             tags.put("ProtocolName", targetSeries.getString(Tag.ProtocolName));
@@ -220,38 +135,5 @@ public class DicomController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
-    }
-
-    private Map<String, Object> convertAttributesToMap(Attributes attributes) {
-        Map<String, Object> result = new HashMap<>();
-        ElementDictionary dict = ElementDictionary.getStandardElementDictionary();
-
-        // Convert tất cả tags thành Map
-        for (int tag : attributes.tags()) {
-            String tagHex = String.format("%08X", tag);
-//            String tagName = Tag.toString(tag);
-
-
-//            Map<String, Object> tagInfo = new HashMap<>();
-//            tagInfo.put("name", tagName);
-//            tagInfo.put("value", attributes.getString(tag));
-//            tagInfo.put("vr", attributes.getVR(tag).toString());
-//
-//            result.put(tagHex, tagInfo);
-            String tagKeyword = dict.keywordOf(tag, null); // ✅ dùng keywordOf thay cho nameOf
-            if (tagKeyword == null) tagKeyword = "Unknown";
-
-            VR vr = attributes.getVR(tag);
-            String value = attributes.getString(tag); // Có thể null
-
-            Map<String, Object> tagInfo = new HashMap<>();
-            tagInfo.put("name", tagKeyword);
-            tagInfo.put("value", value);
-            tagInfo.put("vr", vr.toString());
-
-            result.put(tagHex, tagInfo);
-        }
-
-        return result;
     }
 }
