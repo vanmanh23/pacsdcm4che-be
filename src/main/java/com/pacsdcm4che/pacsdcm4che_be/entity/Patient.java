@@ -4,15 +4,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Column;
 import lombok.Getter;
 
+import java.util.Date;
+
 public class Patient {
     @Column(name = "patient_id")
     private String patientID;
     @Column(name = "patient_name")
     private String patientName;
-    @Column(name = "issuer_of_patient_id")
-    private String issuerOfPatientID;
-    @Column(name = "patient_age")
-    private String patientAge;
+    @Column(name = "sex")
+    private String sex;
+    @Column(name = "patient_birthdate")
+    private Date patientBirthDate;
 
     public String getPatientID() {
         return patientID;
@@ -30,28 +32,29 @@ public class Patient {
         this.patientName = patientName;
     }
 
-    public String getIssuerOfPatientID() {
-        return issuerOfPatientID;
+    public Date getPatientBirthDate() {
+        return patientBirthDate;
     }
 
-    public void setIssuerOfPatientID(String issuerOfPatientID) {
-        this.issuerOfPatientID = issuerOfPatientID;
+    public void setPatientBirthDate(Date patientBirthDate) {
+        this.patientBirthDate = patientBirthDate;
     }
 
-    public String getPatientAge() {
-        return patientAge;
+    public String getSex() {
+        return sex;
     }
 
-    public void setPatientAge(String patientAge) {
-        this.patientAge = patientAge;
+    public void setSex(String sex) {
+        this.sex = sex;
     }
+
     @Override
     public String toString() {
         return "Patient{" +
                 "patientID=" + patientID +
                 ", patientName=" + patientName +
-                ", getIssuerOfPatientID=" + issuerOfPatientID +
-                ", patientAge=" + patientAge +
+                ", sex=" + sex +
+                ", patientBirthDate=" + patientBirthDate +
                 '}';
     }
 }

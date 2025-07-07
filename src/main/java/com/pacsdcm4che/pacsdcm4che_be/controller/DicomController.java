@@ -5,14 +5,19 @@ import com.pacsdcm4che.pacsdcm4che_be.entity.Patient;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Series;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Study;
 import com.pacsdcm4che.pacsdcm4che_be.service.DicomClientService;
+import jakarta.websocket.server.PathParam;
+import org.apache.coyote.Response;
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.ElementDictionary;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.data.VR;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +30,21 @@ public class DicomController {
     @Autowired
     private DicomClientService dicomClientService;
 
+    @PostMapping("/upload")
+    public ResponseEntity<String> uploadDicom(@RequestParam("file") MultipartFile[] file) {
+        try {
+            for (MultipartFile multipartFile : file) {
+                dicomClientService.uploadDicomFile(multipartFile);
+            }
+            return ResponseEntity.ok("update dicom file successfully!");
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
+        }
+    }
+
+
     @GetMapping("/studies/{studyInstanceUID}/tags")
-    public ResponseEntity<Map<String, Object>> getStudyTags(@PathVariable String studyInstanceUID) {
+    public ResponseEntity<Study> getStudyTags(@PathVariable String studyInstanceUID) {
         try {
             List<Attributes> instancesList = dicomClientService.getStudyByUID(studyInstanceUID);
 
@@ -38,7 +56,7 @@ public class DicomController {
                 return ResponseEntity.notFound().build();
             }
 
-
+            Study study = new Study();
             Map<String, Object> tags = new HashMap<>();
             
             // Đọc các DICOM tags quan trọng
@@ -47,6 +65,7 @@ public class DicomController {
             tags.put("StudyDate", attributes.getDate(Tag.StudyDate));
             tags.put("StudyTime", attributes.getString(Tag.StudyTime));// nhơ getdate moi dung
             tags.put("AccessionNumber", attributes.getString(Tag.AccessionNumber));
+
             tags.put("StudyDescription", attributes.getString(Tag.StudyDescription));
             tags.put("ReferringPhysicianName", attributes.getString(Tag.ReferringPhysicianName));
             tags.put("Modality", attributes.getString(Tag.Modality));
@@ -57,8 +76,23 @@ public class DicomController {
             tags.put("PatientID", attributes.getString(Tag.PatientID));
             tags.put("PatientBirthDate", attributes.getDate(Tag.PatientBirthDate));
             tags.put("PatientSex", attributes.getString(Tag.PatientSex));
-            
-            return ResponseEntity.ok(tags);
+            if (attributes.contains(Tag.StudyDescription)) {
+                System.out.println("Tag exists!");
+            }
+            //
+            study.setStudyID(attributes.getString(Tag.StudyID));
+            study.setStudyDate(attributes.getDate(Tag.StudyDate));
+            study.setStudyTime(attributes.getDate(Tag.StudyTime));
+            study.setStudyDescription(attributes.getString(Tag.StudyDescription));
+            study.setModality(attributes.getString(Tag.ModalitiesInStudy));
+            study.setStudyInstanceUID(attributes.getString(Tag.InstanceCreatorUID));
+            study.setAccessionNumber(attributes.getString(Tag.AccessionNumber));
+            study.setReferringPhysicianName(attributes.getString(Tag.ReferringPhysicianName));
+            study.setNumberOfInstances(attributes.getInt(Tag.NumberOfStudyRelatedInstances, 0));
+            study.setNumberOfSeries(attributes.getInt(Tag.NumberOfSeriesRelatedInstances, 0));
+            study.setStudyInstanceUID(attributes.getString(Tag.StudyInstanceUID));
+//            return ResponseEntity.ok(tags);
+            return ResponseEntity.ok(study);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -136,4 +170,64 @@ public class DicomController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/patients")
+    public ResponseEntity<?> getPatients () {
+        try {
+            List<Attributes> patientsList = dicomClientService.getPatients();
+            Attributes targetPatients = patientsList.stream()
+                    .findFirst()
+                    .orElse(null);
+            if (targetPatients == null) {
+                return ResponseEntity.notFound().build();
+            }
+            Patient patient = new Patient();
+            patient.setPatientID(targetPatients.getString(Tag.PatientID));
+            patient.setPatientName(targetPatients.getString(Tag.PatientName));
+            patient.setSex(targetPatients.getString(Tag.PatientSex));
+            patient.setPatientBirthDate(targetPatients.getDate(Tag.PatientBirthDate));
+
+            return ResponseEntity.ok(patient);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @GetMapping("/patients/{PatientUid}")
+    public ResponseEntity<?> getPatientsByUID (@PathVariable String PatientUid) {
+        try {
+            List<Attributes> patientsList = dicomClientService.getPatients();
+            Attributes targetPatients = patientsList.stream()
+                    .filter(patient -> PatientUid.equals(patient.getString(Tag.PatientID)))
+                    .findFirst()
+                    .orElse(null);
+            if (targetPatients == null) {
+                return ResponseEntity.notFound().build();
+            }
+            Patient patient = new Patient();
+            patient.setPatientID(targetPatients.getString(Tag.PatientID));
+            patient.setPatientName(targetPatients.getString(Tag.PatientName));
+            patient.setSex(targetPatients.getString(Tag.PatientSex));
+            patient.setPatientBirthDate(targetPatients.getDate(Tag.PatientBirthDate));
+
+            return ResponseEntity.ok(patient);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+//        @PutMapping("/studies/{studyInstanceUID}")
+//        public ResponseEntity<?> editStudy(
+//                @PathVariable String studyInstanceUID,
+//                @RequestBody Study studyDto) {
+//            try {
+//                dicomClientService.updateStudy( studyInstanceUID, studyDto);
+//                return ResponseEntity.ok("Study updated successfully");
+//            } catch (Exception e) {
+//                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                        .body("Error updating study: " + e.getMessage());
+//            }
+//        }
+//
+
+
 }

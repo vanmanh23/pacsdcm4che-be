@@ -7,12 +7,20 @@ import com.pacsdcm4che.pacsdcm4che_be.entity.Patient;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Series;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Study;
 import com.pacsdcm4che.pacsdcm4che_be.repository.StudyRepository;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.dcm4che3.data.Attributes;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.data.VR;
 import org.dcm4che3.io.DicomInputStream;
+import org.dcm4che3.json.JSONWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
@@ -22,21 +30,22 @@ import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.ResponseExtractor;
 import org.springframework.web.client.RestTemplate;
 
+//import com.fasterxml.jackson.core.JsonGenerator;
+
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.dcm4che3.json.JSONReader;
 import com.fasterxml.jackson.core.JsonFactory;
-
-import javax.json.Json;
-import javax.json.JsonArray;
-import javax.json.JsonObject;
-import javax.json.JsonReader;
-import javax.json.stream.JsonParser;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class DicomClientService {
@@ -45,11 +54,43 @@ public class DicomClientService {
     private final RestTemplate restTemplate;
     @Autowired
     private StudyRepository studyRepository;
+    private ObjectMapper objectMapper;
     private static final String STOW_RS_URL = "http://localhost:8080/dcm4chee-arc/aets/DCM4CHEE/rs";
 
     public DicomClientService(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
+
+        public String uploadDicomFile(MultipartFile dicomFile) throws IOException {
+
+            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+
+                String boundary = "----Boundary" + System.currentTimeMillis();
+                HttpPost postRequest = new HttpPost(STOW_RS_URL + "/studies");
+
+                postRequest.setHeader("Content-Type",
+                        "multipart/related; type=\"application/dicom\"; boundary=" + boundary);
+                InputStream inputStream = dicomFile.getInputStream();
+
+                MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+                builder.setBoundary(boundary);
+                builder.setMimeSubtype("related");
+
+                builder.addBinaryBody(
+                        "dicomfile",
+                        inputStream,
+                        ContentType.create("application/dicom"),
+                        dicomFile.getOriginalFilename()
+                );
+                postRequest.setEntity(builder.build());
+                try (CloseableHttpResponse response = httpClient.execute(postRequest)) {
+                    int statusCode = response.getStatusLine().getStatusCode();
+                    String responseBody = EntityUtils.toString(response.getEntity());
+                    return "Status: " + statusCode + ", Response: " + responseBody;
+                }
+            }
+        }
+
     public List<Attributes> getStudiesWithDicomTags() {
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -190,5 +231,93 @@ public class DicomClientService {
             throw new RuntimeException("Error fetching instances: " + e.getMessage());
         }
     }
+    public List<Attributes> getPatients() {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Accept", "application/dicom+json");
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
 
+            ResponseEntity<String> response = restTemplate.exchange(
+                    STOW_RS_URL + "/patients",
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                return parseDicomJsonToAttributes(response.getBody());
+            } else {
+                throw new RuntimeException("Failed to fetch studies: " + response.getStatusCode());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching studies with DICOM tags: " + e.getMessage());
+        }
+    }
+//    public void updateStudy(String studyInstanceUID, Study dto) throws Exception {
+//        if (objectMapper == null) {
+//            objectMapper = new ObjectMapper();
+//        }
+//        Attributes attrs = new Attributes();
+//
+//        attrs.setString(Tag.StudyInstanceUID, VR.UI, studyInstanceUID);
+//
+//        if (dto.getStudyID() != null)
+//            attrs.setString(Tag.StudyID, VR.SH, dto.getStudyID());
+//
+//        if (dto.getStudyDescription() != null)
+//            attrs.setString(Tag.StudyDescription, VR.LO, dto.getStudyDescription());
+//
+//        if (dto.getAccessionNumber() != null)
+//            attrs.setString(Tag.AccessionNumber, VR.SH, dto.getAccessionNumber());
+//
+//        if (dto.getReferringPhysicianName() != null)
+//            attrs.setString(Tag.ReferringPhysicianName, VR.PN, dto.getReferringPhysicianName());
+//
+//        if (dto.getModality() != null)
+//            attrs.setString(Tag.ModalitiesInStudy, VR.CS, dto.getModality());
+//
+//        if (dto.getNumberOfSeries() != null)
+//            attrs.setInt(Tag.NumberOfStudyRelatedSeries, VR.IS, dto.getNumberOfSeries());
+//
+////        if (dto.getNumberOfInstances() != null)
+//            attrs.setInt(Tag.NumberOfStudyRelatedInstances, VR.IS, dto.getNumberOfInstances());
+//
+//        if (dto.getStudyDate() != null) {
+//            attrs.setDate(Tag.StudyDate, VR.DA, dto.getStudyDate());
+//        }
+//        if (dto.getStudyTime() != null) {
+//            attrs.setDate(Tag.StudyTime, VR.TM, dto.getStudyTime());
+//        }
+//
+//        if (dto.getPatientID() != null)
+//            attrs.setString(Tag.PatientID, VR.LO, dto.getPatientID());
+////        if (dto.getPatientName() != null)
+////            attrs.setString(Tag.PatientName, VR.PN, dto.getPatientName());
+////        if (dto.getPatientBirthDate() != null)
+////            attrs.setDate(Tag.PatientBirthDate, VR.DA, dto.getPatientBirthDate());
+////        if (dto.getPatientSex() != null)
+////            attrs.setString(Tag.PatientSex, VR.CS, dto.getPatientSex());
+//
+//        // Convert to DICOM JSON
+//        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+//        JsonGenerator gen = Json.createGenerator(baos);
+//        JSONWriter writer = new JSONWriter(gen);
+//        writer.write(attrs);
+//        gen.close();
+//
+//        String dicomJsonArray = "[" + baos.toString(StandardCharsets.UTF_8) + "]";
+//
+//        HttpHeaders headers = new HttpHeaders();
+//        headers.setContentType(MediaType.parseMediaType("application/dicom+json"));
+//
+//        HttpEntity<String> entity = new HttpEntity<>(dicomJsonArray, headers);
+//
+//        String url = STOW_RS_URL + "/studies/" + studyInstanceUID;
+//
+//        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.PUT, entity, String.class);
+//
+//        if (!response.getStatusCode().is2xxSuccessful()) {
+//            throw new RuntimeException("Update failed: " + response.getStatusCode());
+//        }
+//    }
 }

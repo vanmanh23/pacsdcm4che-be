@@ -22,7 +22,7 @@ public class Study {
     private Date studyDate;
 
     @Column(name = "study_time")
-    private String studyTime;
+    private Date studyTime;
 
     @Column(name = "accession_number")
     private String accessionNumber;
@@ -42,10 +42,12 @@ public class Study {
     @Column(name = "number_of_instances")
     private Integer numberOfInstances;
 
+    @Column(name = "patient_id")
+    private String patientID;
     public Study() {
     }
 
-    public Study(Long id, String studyInstanceUID, String studyID, Date studyDate, String studyTime, String accessionNumber, String studyDescription, String referringPhysicianName, String modality, Integer numberOfSeries, Integer numberOfInstances) {
+    public Study(Long id, String studyInstanceUID, String patientID, String studyID, Date studyDate, Date studyTime, String accessionNumber, String studyDescription, String referringPhysicianName, String modality, Integer numberOfSeries, Integer numberOfInstances) {
         this.id = id;
         this.studyInstanceUID = studyInstanceUID;
         this.studyID = studyID;
@@ -57,6 +59,7 @@ public class Study {
         this.modality = modality;
         this.numberOfSeries = numberOfSeries;
         this.numberOfInstances = numberOfInstances;
+        this.patientID = patientID;
     }
 
     public Long getId() {
@@ -91,11 +94,11 @@ public class Study {
         this.studyDate = studyDate;
     }
 
-    public String getStudyTime() {
+    public Date getStudyTime() {
         return studyTime;
     }
 
-    public void setStudyTime(String studyTime) {
+    public void setStudyTime(Date studyTime) {
         this.studyTime = studyTime;
     }
 
@@ -145,5 +148,13 @@ public class Study {
 
     public void setNumberOfInstances(Integer numberOfInstances) {
         this.numberOfInstances = numberOfInstances;
+    }
+
+    public String getPatientID() {
+        return patientID;
+    }
+
+    public void setPatientID(String patientID) {
+        this.patientID = patientID;
     }
 }
