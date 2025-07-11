@@ -42,6 +42,8 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.dcm4che3.json.JSONReader;
 import com.fasterxml.jackson.core.JsonFactory;
@@ -86,9 +88,29 @@ public class DicomClientService {
                 try (CloseableHttpResponse response = httpClient.execute(postRequest)) {
                     int statusCode = response.getStatusLine().getStatusCode();
                     String responseBody = EntityUtils.toString(response.getEntity());
-                    return "Status: " + statusCode + ", Response: " + responseBody;
+                    if (statusCode >= 200 && statusCode < 300) {
+                        // Trích xuất studyInstanceUID từ response nếu có
+                        String studyId = extractStudyIdFromXmlResponse(responseBody);
+                        return studyId != null ? studyId : "Uploaded but studyId not found.";
+                    } else {
+                        throw new IOException("Upload failed. Status: " + statusCode + ". Response: " + responseBody);
+                    }
                 }
             }
+        }
+        private String extractStudyIdFromXmlResponse(String responseBody) {
+            try {
+                // Regex để tìm đoạn studies/<UID>
+                Pattern pattern = Pattern.compile("studies/([0-9.]+)");
+                Matcher matcher = pattern.matcher(responseBody);
+
+                if (matcher.find()) {
+                    return matcher.group(1); // studyInstanceUID
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
         }
 
     public List<Attributes> getStudiesWithDicomTags() {
@@ -113,7 +135,6 @@ public class DicomClientService {
             throw new RuntimeException("Error fetching studies with DICOM tags: " + e.getMessage());
         }
     }
-
     private List<Attributes> parseDicomJsonToAttributes(String jsonResponse) {
         List<Attributes> attributesList = new ArrayList<>();
 
@@ -138,8 +159,6 @@ public class DicomClientService {
         }
         return attributesList;
     }
-
-
 //    public Attributes getStudyByUID(String studyInstanceUID) {
     public List<Attributes> getStudyByUID(String studyInstanceUID) {
         try {
@@ -164,7 +183,6 @@ public class DicomClientService {
                     throw new RuntimeException("Error parsing DICOM JSON: " + e.getMessage());
                 }
             } else if (response.getStatusCode() == HttpStatus.NO_CONTENT || body == null || body.isBlank()) {
-                // Không có instance nào, trả về list rỗng
                 return Collections.emptyList();
             } else {
                 throw new RuntimeException("Failed to fetch instances: " + response.getStatusCode());
@@ -231,6 +249,28 @@ public class DicomClientService {
             throw new RuntimeException("Error fetching instances: " + e.getMessage());
         }
     }
+public ResponseEntity<byte[]> getInstancesImage(String studyInstanceUID, String seriesInstanceUID , String instanceUID) {
+    try {
+        HttpHeaders imageHeaders = new HttpHeaders();
+        imageHeaders.set("Accept", "image/jpeg");
+        HttpEntity<Void> imageEntity = new HttpEntity<>(imageHeaders);
+
+        ResponseEntity<byte[]> imageResponse = restTemplate.exchange(
+                STOW_RS_URL + "/studies/" + studyInstanceUID + "/series/" + seriesInstanceUID + "/instances/" + instanceUID + "/rendered",
+                HttpMethod.GET,
+                imageEntity,
+                byte[].class
+        );
+        System.out.println("response rrrrrr: "+imageResponse);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .body(imageResponse.getBody());
+
+    } catch (Exception e) {
+        e.printStackTrace();
+        throw new RuntimeException("Error fetching instances: " + e.getMessage());
+    }
+}
     public List<Attributes> getPatients() {
         try {
             HttpHeaders headers = new HttpHeaders();

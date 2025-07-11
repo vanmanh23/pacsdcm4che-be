@@ -44,6 +44,8 @@ public class Study {
 
     @Column(name = "patient_id")
     private String patientID;
+    @OneToOne(mappedBy = "study")
+    private Diagnose diagnose;
     public Study() {
     }
 
@@ -156,5 +158,13 @@ public class Study {
 
     public void setPatientID(String patientID) {
         this.patientID = patientID;
+    }
+
+    public Diagnose getDiagnose() {
+        return diagnose;
+    }
+
+    public void setDiagnose(Diagnose diagnose) {
+        this.diagnose = diagnose;
     }
 }

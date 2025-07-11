@@ -137,6 +137,16 @@
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.dcm4che</groupId>
+			<artifactId>dcm4che-image</artifactId>
+			<version>5.23.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.dcm4che</groupId>
+			<artifactId>dcm4che-imageio</artifactId>
+			<version>5.23.1</version>
+		</dependency>
 <!--		<dependency>-->
 <!--			<groupId>ch.qos.logback</groupId>-->
 <!--			<artifactId>logback-classic</artifactId>-->

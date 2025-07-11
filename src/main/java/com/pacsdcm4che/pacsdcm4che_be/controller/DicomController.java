@@ -1,47 +1,41 @@
 package com.pacsdcm4che.pacsdcm4che_be.controller;
 
-import com.pacsdcm4che.pacsdcm4che_be.entity.Instance;
-import com.pacsdcm4che.pacsdcm4che_be.entity.Patient;
-import com.pacsdcm4che.pacsdcm4che_be.entity.Series;
-import com.pacsdcm4che.pacsdcm4che_be.entity.Study;
+import com.pacsdcm4che.pacsdcm4che_be.entity.*;
+import com.pacsdcm4che.pacsdcm4che_be.service.DiagnoseService;
 import com.pacsdcm4che.pacsdcm4che_be.service.DicomClientService;
-import jakarta.websocket.server.PathParam;
-import org.apache.coyote.Response;
 import org.dcm4che3.data.Attributes;
-import org.dcm4che3.data.ElementDictionary;
 import org.dcm4che3.data.Tag;
-import org.dcm4che3.data.VR;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/dicom")
 @CrossOrigin(origins = "*")
 public class DicomController {
-
     @Autowired
     private DicomClientService dicomClientService;
+    @Autowired
+    private DiagnoseService diagnoseService;
 
     @PostMapping("/upload")
     public ResponseEntity<String> uploadDicom(@RequestParam("file") MultipartFile[] file) {
+        ArrayList<String> listRespone = new ArrayList<String>();
         try {
             for (MultipartFile multipartFile : file) {
-                dicomClientService.uploadDicomFile(multipartFile);
+                String respon = dicomClientService.uploadDicomFile(multipartFile);
+                listRespone.add(respon);
             }
-            return ResponseEntity.ok("update dicom file successfully!");
+            return ResponseEntity.ok(listRespone.toString());
+//            return ResponseEntity.ok("update dicom file successfully!");
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body("Upload failed: " + e.getMessage());
         }
     }
-
 
     @GetMapping("/studies/{studyInstanceUID}/tags")
     public ResponseEntity<Study> getStudyTags(@PathVariable String studyInstanceUID) {
@@ -63,7 +57,7 @@ public class DicomController {
             tags.put("StudyInstanceUID", attributes.getString(Tag.StudyInstanceUID));
             tags.put("StudyID", attributes.getString(Tag.StudyID));
             tags.put("StudyDate", attributes.getDate(Tag.StudyDate));
-            tags.put("StudyTime", attributes.getString(Tag.StudyTime));// nhơ getdate moi dung
+            tags.put("StudyTime", attributes.getDate(Tag.StudyTime));// nhơ getdate moi dung
             tags.put("AccessionNumber", attributes.getString(Tag.AccessionNumber));
 
             tags.put("StudyDescription", attributes.getString(Tag.StudyDescription));
@@ -97,7 +91,6 @@ public class DicomController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
     @GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/tags")
     public ResponseEntity<Map<String, Object>> getSeriesTags(
             @PathVariable String studyInstanceUID,
@@ -141,11 +134,11 @@ public class DicomController {
                     .filter(instance -> instanceUID.equals(instance.getString(Tag.SOPInstanceUID)))
                     .findFirst()
                     .orElse(null);
-            
+
             if (targetInstance == null) {
                 return ResponseEntity.notFound().build();
             }
-            
+
             Map<String, Object> tags = new HashMap<>();
             tags.put("SOPInstanceUID", targetInstance.getString(Tag.SOPInstanceUID));
             tags.put("InstanceNumber", targetInstance.getString(Tag.InstanceNumber));
@@ -154,7 +147,7 @@ public class DicomController {
             tags.put("InstanceCreationTime", targetInstance.getString(Tag.InstanceCreationTime));
             tags.put("ImageType", targetInstance.getString(Tag.ImageType));
             tags.put("ImageComments", targetInstance.getString(Tag.ImageComments));
-            
+
             // Image specific tags
             tags.put("Rows", targetInstance.getInt(Tag.Rows, 0));
             tags.put("Columns", targetInstance.getInt(Tag.Columns, 0));
@@ -164,13 +157,24 @@ public class DicomController {
             tags.put("PixelRepresentation", targetInstance.getInt(Tag.PixelRepresentation, 0));
             tags.put("SamplesPerPixel", targetInstance.getInt(Tag.SamplesPerPixel, 0));
             tags.put("PhotometricInterpretation", targetInstance.getString(Tag.PhotometricInterpretation));
-            
+
             return ResponseEntity.ok(tags);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
     }
-
+@GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{instanceUID}/images")
+public ResponseEntity<byte[]> getInstanceImages(
+        @PathVariable String studyInstanceUID,
+        @PathVariable String seriesInstanceUID,
+        @PathVariable String instanceUID) {
+    try {
+        ResponseEntity<byte[]> respon = dicomClientService.getInstancesImage(studyInstanceUID, seriesInstanceUID, instanceUID);
+        return respon;
+    } catch (Exception e) {
+        return ResponseEntity.internalServerError().build();
+    }
+}
     @GetMapping("/patients")
     public ResponseEntity<?> getPatients () {
         try {
@@ -214,20 +218,10 @@ public class DicomController {
             return ResponseEntity.internalServerError().build();
         }
     }
-
-//        @PutMapping("/studies/{studyInstanceUID}")
-//        public ResponseEntity<?> editStudy(
-//                @PathVariable String studyInstanceUID,
-//                @RequestBody Study studyDto) {
-//            try {
-//                dicomClientService.updateStudy( studyInstanceUID, studyDto);
-//                return ResponseEntity.ok("Study updated successfully");
-//            } catch (Exception e) {
-//                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                        .body("Error updating study: " + e.getMessage());
-//            }
-//        }
-//
-
+    @PostMapping("/diagnose")
+    public ResponseEntity<Diagnose> createDiagnose(@RequestBody Diagnose diagnose) {
+        Diagnose createdDiagnose = diagnoseService.saveDiagnose(diagnose);
+        return new ResponseEntity<>(createdDiagnose, HttpStatus.CREATED);
+    }
 
 }
