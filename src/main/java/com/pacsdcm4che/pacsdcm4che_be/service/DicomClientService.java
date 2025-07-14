@@ -228,7 +228,6 @@ public class DicomClientService {
                     entity,
                     String.class
             );
-
             String body = response.getBody();
             if (response.getStatusCode() == HttpStatus.OK && body != null && !body.isBlank()) {
                 try {
@@ -276,16 +275,21 @@ public ResponseEntity<byte[]> getInstancesImage(String studyInstanceUID, String 
             HttpHeaders headers = new HttpHeaders();
             headers.set("Accept", "application/dicom+json");
             HttpEntity<Void> entity = new HttpEntity<>(headers);
-
+            List<Attributes> attributesList = new ArrayList<>();
             ResponseEntity<String> response = restTemplate.exchange(
                     STOW_RS_URL + "/patients",
                     HttpMethod.GET,
                     entity,
                     String.class
             );
-
+            System.out.println("----------------------------: ");
+            for (Object item : parseDicomJsonToAttributes(response.getBody())) {
+                System.out.println("444444444444444"+ item);
+                attributesList.add((Attributes) item);
+            }
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-                return parseDicomJsonToAttributes(response.getBody());
+//                return parseDicomJsonToAttributes(response.getBody());
+                return attributesList;
             } else {
                 throw new RuntimeException("Failed to fetch studies: " + response.getStatusCode());
             }

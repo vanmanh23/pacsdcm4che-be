@@ -24,14 +24,14 @@ public class Instance {
     @Column(name = "pixel_Data")
     private String pixelData;
     @Column(name = "instance_creation_date")
-    private String instanceCreationDate;
+    private Date instanceCreationDate;
     @Column(name = "instance_creation_time")
     private Date instanceCreationTime;
 
     public Instance() {
     }
 
-    public Instance(String referencedSopInstanceUID, String instanceNumber, String sopClassUID, String sopInstanceUID, String studyInstanceUID, String seriesInstanceUID, String pixelData, String instanceCreationDate, Date instanceCreationTime) {
+    public Instance(String referencedSopInstanceUID, String instanceNumber, String sopClassUID, String sopInstanceUID, String studyInstanceUID, String seriesInstanceUID, String pixelData, Date instanceCreationDate, Date instanceCreationTime) {
         this.referencedSopInstanceUID = referencedSopInstanceUID;
         this.instanceNumber = instanceNumber;
         this.sopClassUID = sopClassUID;
@@ -107,11 +107,11 @@ public class Instance {
         this.pixelData = pixelData;
     }
 
-    public String getInstanceCreationDate() {
+    public Date getInstanceCreationDate() {
         return instanceCreationDate;
     }
 
-    public void setInstanceCreationDate(String instanceCreationDate) {
+    public void setInstanceCreationDate(Date instanceCreationDate) {
         this.instanceCreationDate = instanceCreationDate;
     }
 

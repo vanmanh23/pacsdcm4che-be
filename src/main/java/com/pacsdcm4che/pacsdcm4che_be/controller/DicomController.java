@@ -185,13 +185,18 @@ public ResponseEntity<byte[]> getInstanceImages(
             if (targetPatients == null) {
                 return ResponseEntity.notFound().build();
             }
-            Patient patient = new Patient();
-            patient.setPatientID(targetPatients.getString(Tag.PatientID));
-            patient.setPatientName(targetPatients.getString(Tag.PatientName));
-            patient.setSex(targetPatients.getString(Tag.PatientSex));
-            patient.setPatientBirthDate(targetPatients.getDate(Tag.PatientBirthDate));
+            List<Patient> patients = new ArrayList<>();
 
-            return ResponseEntity.ok(patient);
+            for(Attributes item: patientsList) {
+                Patient patient = new Patient();
+                patient.setPatientID(item.getString(Tag.PatientID));
+                patient.setPatientName(item.getString(Tag.PatientName));
+                patient.setSex(item.getString(Tag.PatientSex));
+                patient.setPatientBirthDate(item.getDate(Tag.PatientBirthDate));
+
+                patients.add(patient);
+            }
+            return ResponseEntity.ok(patients);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
@@ -223,5 +228,38 @@ public ResponseEntity<byte[]> getInstanceImages(
         Diagnose createdDiagnose = diagnoseService.saveDiagnose(diagnose);
         return new ResponseEntity<>(createdDiagnose, HttpStatus.CREATED);
     }
+    //
+    @GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances")
+    public ResponseEntity<List<Instance>> getInstancesBySeriesUID(
+            @PathVariable String studyInstanceUID,
+            @PathVariable String seriesInstanceUID) {
+        try {
+            List<Attributes> instancesList = dicomClientService.getInstancesBySeriesUID(studyInstanceUID, seriesInstanceUID);
+            Attributes targetInstance = instancesList.stream()
+                    .findFirst()
+                    .orElse(null);
+            System.out.println("instancesList: "+instancesList);
+            if (targetInstance == null) {
+                return ResponseEntity.notFound().build();
+            }
+            List<Instance> instances = new ArrayList<>();
+            for(Attributes item: instancesList) {
+                Instance instance = new Instance();
+                instance.setInstanceNumber(item.getString(Tag.InstanceNumber));
+                instance.setSopInstanceUID(item.getString(Tag.SOPInstanceUID));
+                instance.setSopClassUID(item.getString(Tag.SOPClassUID));
+                instance.setInstanceCreationDate(item.getDate(Tag.InstanceCreationDate));
+                instance.setInstanceCreationTime(item.getDate(Tag.InstanceCreationTime));
+                instance.setReferencedSopInstanceUID(item.getString(Tag.ReferencedSOPInstanceUID));
+                instance.setSeriesInstanceUID(item.getString(Tag.SeriesInstanceUID));
+                instance.setPixelData(item.getString(Tag.PixelData));
 
+                instances.add(instance);
+            }
+
+            return ResponseEntity.ok(instances);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
