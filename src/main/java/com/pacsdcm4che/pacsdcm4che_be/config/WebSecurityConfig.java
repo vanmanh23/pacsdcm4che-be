@@ -2,7 +2,7 @@ package com.pacsdcm4che.pacsdcm4che_be.config;
 
 import com.pacsdcm4che.pacsdcm4che_be.security.JwtAuthenticationEntryPoint;
 import com.pacsdcm4che.pacsdcm4che_be.security.JwtAuthenticationFilter;
-import com.pacsdcm4che.pacsdcm4che_be.service.CustomUserDetailsService;
+import com.pacsdcm4che.pacsdcm4che_be.security.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -51,7 +51,7 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/**").permitAll()
+                    .requestMatchers("/api/user/**").permitAll()
                     .anyRequest().authenticated()
             );
 

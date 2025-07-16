@@ -1,30 +1,22 @@
 package com.pacsdcm4che.pacsdcm4che_be.controller;
 
-import com.pacsdcm4che.pacsdcm4che_be.dtos.AuthRequestDTO;
+import com.pacsdcm4che.pacsdcm4che_be.dtos.CreateUserRequestDTO;
 import com.pacsdcm4che.pacsdcm4che_be.dtos.AuthResponseDTO;
-import com.pacsdcm4che.pacsdcm4che_be.entity.ERole;
-import com.pacsdcm4che.pacsdcm4che_be.entity.Role;
+import com.pacsdcm4che.pacsdcm4che_be.dtos.LoginDTO;
 import com.pacsdcm4che.pacsdcm4che_be.entity.UserEntity;
-import com.pacsdcm4che.pacsdcm4che_be.repository.RoleRepository;
-import com.pacsdcm4che.pacsdcm4che_be.repository.UserRepository;
 import com.pacsdcm4che.pacsdcm4che_be.security.JwtTokenProvider;
 import com.pacsdcm4che.pacsdcm4che_be.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @CrossOrigin(origins = "*")
@@ -39,13 +31,6 @@ public class AuthenController {
     @Autowired
     private JwtTokenProvider tokenProvider;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    @Autowired
-    private RoleRepository  roleRepository;
 
 
 //    @PostMapping("/register")
@@ -54,23 +39,26 @@ public class AuthenController {
 //    }
     @GetMapping("/{username}")
     public ResponseEntity<UserEntity> getUserByUsername(@PathVariable String username) {
-        return userService.getUserByUserName(username);
+        return ResponseEntity.ok(userService.getUserByUserName(username));
     }
     @GetMapping("/all")
     public ResponseEntity<List<UserEntity>> getAllUsers() {
-        return userService.getAllUsers();
+        return ResponseEntity.ok(userService.getAllUsers());
     }
-    @PatchMapping("/update/{id}")
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
+    @PutMapping("/update/{id}")
     public ResponseEntity<UserEntity> updateUser(@PathVariable Long id, @RequestBody @Valid UserEntity user) {
-        return userService.updateUser(id, user);
+        return ResponseEntity.ok(userService.updateUser(id, user));
     }
+
+    @PreAuthorize("hasRole('ROLE_ADMIN')")
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<HttpStatus> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        return ResponseEntity.ok(HttpStatus.OK);
+        return ResponseEntity.ok(HttpStatus.NO_CONTENT);
     }
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@RequestBody AuthRequestDTO loginRequest) {
+    public ResponseEntity<?> authenticateUser(@RequestBody LoginDTO loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
@@ -82,36 +70,8 @@ public class AuthenController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@RequestBody AuthRequestDTO signUpRequest) {
-        if (userRepository.findByUsername(signUpRequest.getUsername()).isPresent()) {
-            return ResponseEntity.badRequest().body("Username is already taken!");
-        }
-        UserEntity user = new UserEntity();
-        user.setUsername(signUpRequest.getUsername());
-        user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
-        Set<String> strRoles = signUpRequest.getRole();
-        Set<Role> roles = new HashSet<>();
-        if (strRoles == null) {
-            Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-            roles.add(userRole);
-        } else {
-            strRoles.forEach(role -> {
-                switch (role) {
-                    case "admin":
-                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(adminRole);
-                    default:
-                        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
-                        roles.add(userRole);
-                }
-            });
-        }
-        user.setRoles(roles);
-        userRepository.save(user);
-        return ResponseEntity.ok("User registered successfully!");
+    public ResponseEntity<?> registerUser(@RequestBody CreateUserRequestDTO signUpRequest) {
+        return ResponseEntity.ok(userService.signUp(signUpRequest));
     }
 
 }
