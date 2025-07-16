@@ -1,4 +1,4 @@
-package com.pacsdcm4che.pacsdcm4che_be;
+package com.pacsdcm4che.pacsdcm4che_be.exception;
 
 import com.pacsdcm4che.pacsdcm4che_be.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
