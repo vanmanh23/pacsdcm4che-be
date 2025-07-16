@@ -4,6 +4,7 @@ import com.pacsdcm4che.pacsdcm4che_be.dtos.CreateUserRequestDTO;
 import com.pacsdcm4che.pacsdcm4che_be.entity.ERole;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Role;
 import com.pacsdcm4che.pacsdcm4che_be.entity.UserEntity;
+import com.pacsdcm4che.pacsdcm4che_be.exception.BusinessException;
 import com.pacsdcm4che.pacsdcm4che_be.exception.ResourceNotFoundException;
 import com.pacsdcm4che.pacsdcm4che_be.repository.RoleRepository;
 import com.pacsdcm4che.pacsdcm4che_be.repository.UserRepository;
@@ -17,6 +18,7 @@ import java.util.Set;
 
 @Service
 public class UserService {
+
     @Autowired
     private UserRepository userRepository;
 
@@ -28,7 +30,7 @@ public class UserService {
 
     public UserEntity createUser(UserEntity user) {
         if (userRepository.existsByUsername(user.getUsername())) {
-            throw new RuntimeException("User already exists");
+            throw new BusinessException("User already exists");
         }
         return userRepository.save(user);
     }
@@ -39,16 +41,12 @@ public class UserService {
         return (UserEntity) userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
     public List<UserEntity> getAllUsers() {
-        if (userRepository.count() == 0) {
-            throw new ResourceNotFoundException("No users found");
-        }
          return userRepository.findAll();
     }
     public UserEntity updateUser(Long id, UserEntity user) {
         UserEntity newUser = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         newUser.setUsername(user.getUsername());
         newUser.setPassword(user.getPassword());
-
         return userRepository.save(newUser);
     }
     public void deleteUser(Long id) {
@@ -64,7 +62,7 @@ public class UserService {
 
     public UserEntity signUp(CreateUserRequestDTO createUserRequestDTO) {
         if (userRepository.findByUsername(createUserRequestDTO.getUsername()).isPresent()) {
-            throw new RuntimeException("Error: Username is already taken!");
+            throw new BusinessException("Error: Username is already taken!");
         }
         UserEntity user = new UserEntity();
         user.setUsername(createUserRequestDTO.getUsername());
@@ -73,18 +71,18 @@ public class UserService {
         Set<Role> roles = new HashSet<>();
         if (strRoles == null) {
             Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                    .orElseThrow(() -> new ResourceNotFoundException(" Role is not found."));
             roles.add(userRole);
         } else {
             strRoles.forEach(role -> {
                 switch (role) {
                     case "admin":
                         Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                                .orElseThrow(() -> new ResourceNotFoundException("Error: Role is not found."));
                         roles.add(adminRole);
                     default:
                         Role userRole = roleRepository.findByName(ERole.ROLE_USER)
-                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                                .orElseThrow(() -> new ResourceNotFoundException("Error: Role is not found."));
                         roles.add(userRole);
                 }
             });
