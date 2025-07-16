@@ -1,4 +1,4 @@
-package com.pacsdcm4che.pacsdcm4che_be.service;
+package com.pacsdcm4che.pacsdcm4che_be.security;
 
 import com.pacsdcm4che.pacsdcm4che_be.entity.UserEntity;
 import org.springframework.security.core.GrantedAuthority;

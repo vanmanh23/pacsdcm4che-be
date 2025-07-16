@@ -1,7 +1,8 @@
-package com.pacsdcm4che.pacsdcm4che_be.service;
+package com.pacsdcm4che.pacsdcm4che_be.security;
 
 import com.pacsdcm4che.pacsdcm4che_be.entity.UserEntity;
 import com.pacsdcm4che.pacsdcm4che_be.repository.UserRepository;
+import com.pacsdcm4che.pacsdcm4che_be.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

@@ -8,17 +8,19 @@ public class Diagnose {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "description")
     private String description;
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "study_id", referencedColumnName = "id")
-    private Study study;
+
+    @Column(name = "study_id", nullable = false)
+    private String studyId;
 
     public Diagnose() {
     }
 
-    public Diagnose(String description, Study study) {
+    public Diagnose(String description, String studyId) {
         this.description = description;
-        this.study = study;
+        this.studyId = studyId;
     }
 
     public Long getId() {
@@ -37,11 +39,11 @@ public class Diagnose {
         this.description = description;
     }
 
-    public Study getStudy() {
-        return study;
+    public String getStudyId() {
+        return studyId;
     }
 
-    public void setStudy(Study study) {
-        this.study = study;
+    public void setStudyId(String studyId) {
+        this.studyId = studyId;
     }
 }

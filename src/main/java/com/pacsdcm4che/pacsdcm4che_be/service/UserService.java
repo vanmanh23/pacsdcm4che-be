@@ -1,52 +1,96 @@
 package com.pacsdcm4che.pacsdcm4che_be.service;
 
+import com.pacsdcm4che.pacsdcm4che_be.dtos.CreateUserRequestDTO;
+import com.pacsdcm4che.pacsdcm4che_be.entity.ERole;
+import com.pacsdcm4che.pacsdcm4che_be.entity.Role;
 import com.pacsdcm4che.pacsdcm4che_be.entity.UserEntity;
 import com.pacsdcm4che.pacsdcm4che_be.exception.ResourceNotFoundException;
+import com.pacsdcm4che.pacsdcm4che_be.repository.RoleRepository;
 import com.pacsdcm4che.pacsdcm4che_be.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    public ResponseEntity<UserEntity> createUser(UserEntity user) {
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    public UserEntity createUser(UserEntity user) {
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new RuntimeException("User already exists");
         }
-        try {
-            return ResponseEntity.ok(userRepository.save(user));
-        } catch (Exception e) {
-            throw new RuntimeException("Error creating user", e);
-        }
+        return userRepository.save(user);
     }
-    public ResponseEntity<UserEntity> getUserByUserName(String username) {
+    public UserEntity getUserByUserName(String username) {
         if (!userRepository.existsByUsername(username)) {
             throw new ResourceNotFoundException("User not found");
         }
-        return ResponseEntity.ok((UserEntity) userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found")));
+        return (UserEntity) userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
-    public ResponseEntity<List<UserEntity>> getAllUsers() {
+    public List<UserEntity> getAllUsers() {
         if (userRepository.count() == 0) {
             throw new ResourceNotFoundException("No users found");
         }
-         return ResponseEntity.ok(userRepository.findAll());
+         return userRepository.findAll();
     }
-    public ResponseEntity<UserEntity> updateUser(Long id, UserEntity user) {
+    public UserEntity updateUser(Long id, UserEntity user) {
         UserEntity newUser = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         newUser.setUsername(user.getUsername());
         newUser.setPassword(user.getPassword());
 
-        return ResponseEntity.ok(userRepository.save(newUser));
+        return userRepository.save(newUser);
     }
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User not found");
         }
         userRepository.deleteById(id);
+    }
+
+    public UserEntity getUserById(Long id) {
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    public UserEntity signUp(CreateUserRequestDTO createUserRequestDTO) {
+        if (userRepository.findByUsername(createUserRequestDTO.getUsername()).isPresent()) {
+            throw new RuntimeException("Error: Username is already taken!");
+        }
+        UserEntity user = new UserEntity();
+        user.setUsername(createUserRequestDTO.getUsername());
+        user.setPassword(passwordEncoder.encode(createUserRequestDTO.getPassword()));
+        Set<String> strRoles = createUserRequestDTO.getRole();
+        Set<Role> roles = new HashSet<>();
+        if (strRoles == null) {
+            Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+            roles.add(userRole);
+        } else {
+            strRoles.forEach(role -> {
+                switch (role) {
+                    case "admin":
+                        Role adminRole = roleRepository.findByName(ERole.ROLE_ADMIN)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        roles.add(adminRole);
+                    default:
+                        Role userRole = roleRepository.findByName(ERole.ROLE_USER)
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
+                        roles.add(userRole);
+                }
+            });
+        }
+        user.setRoles(roles);
+        return userRepository.save(user);
+
     }
 }

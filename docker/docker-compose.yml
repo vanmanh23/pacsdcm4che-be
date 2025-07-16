@@ -13,6 +13,7 @@ services:
     volumes:
       - ldap_data:/var/lib/openldap/openldap-data
       - ldap_conf:/etc/openldap/slapd.d
+    restart: always
   db:
     image: dcm4che/postgres-dcm4chee:17.1-33
     logging:
@@ -29,6 +30,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - /etc/timezone:/etc/timezone:ro
       - db_data:/var/lib/postgresql/data
+    restart: always
   arc:
     image: dcm4che/dcm4chee-arc-psql:5.33.1
     logging:
@@ -60,6 +62,7 @@ services:
       - /etc/timezone:/etc/timezone:ro
       - wildfly_data:/opt/wildfly/standalone
       - storage_data:/storage
+    restart: always
 
 volumes:
   ldap_data:
