@@ -52,6 +52,7 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/user/**").permitAll()
+                    .requestMatchers("/api/dicom/**").permitAll()
                     .anyRequest().authenticated()
             );
 
@@ -60,4 +61,4 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
     return http.build();
 }
 
-} 
+}

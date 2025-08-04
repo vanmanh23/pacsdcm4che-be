@@ -32,18 +32,21 @@ public class UserService {
         }
         return userRepository.save(user);
     }
+
     public UserEntity getUserByUserName(String username) {
         if (!userRepository.existsByUsername(username)) {
             throw new ResourceNotFoundException("User not found");
         }
         return (UserEntity) userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
+
     public List<UserEntity> getAllUsers() {
         if (userRepository.count() == 0) {
             throw new ResourceNotFoundException("No users found");
         }
-         return userRepository.findAll();
+        return userRepository.findAll();
     }
+
     public UserEntity updateUser(Long id, UserEntity user) {
         UserEntity newUser = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         newUser.setUsername(user.getUsername());
@@ -51,6 +54,7 @@ public class UserService {
 
         return userRepository.save(newUser);
     }
+
     public void deleteUser(Long id) {
         if (!userRepository.existsById(id)) {
             throw new ResourceNotFoundException("User not found");
@@ -91,6 +95,18 @@ public class UserService {
         }
         user.setRoles(roles);
         return userRepository.save(user);
+    }
 
+    public CreateUserRequestDTO getUserByUsername(String username) {
+        UserEntity user = (UserEntity) userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        CreateUserRequestDTO createUserRequestDTO = new CreateUserRequestDTO();
+        createUserRequestDTO.setUsername(user.getUsername());
+        createUserRequestDTO.setPassword(user.getPassword());
+        Set<String> strRoles = new HashSet<>();
+        for (Role role : user.getRoles()) {
+            strRoles.add(role.getName().name());
+        }
+        createUserRequestDTO.setRole(strRoles);
+        return createUserRequestDTO;
     }
 }

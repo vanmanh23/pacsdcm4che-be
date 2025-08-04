@@ -16,11 +16,11 @@ import org.dcm4che3.data.Attributes;
 //import org.slf4j.Logger;
 //import org.slf4j.LoggerFactory;
 import org.dcm4che3.data.Tag;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 //import com.fasterxml.jackson.core.JsonGenerator;
 
 import java.io.*;
@@ -76,12 +76,19 @@ public class DicomClientService {
                         if (studySeriesInstanceIdsFromXmlResponse == null) {
                             throw new IOException("No studyInstanceUID found in response");
                         }
-                        //save studyInstanceUID vào bảng chuẩn đoán
+                        if (diagnoseRepository.existsByStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"))) {
+                            System.out.println("StudyInstanceUID already exists");
+                            throw new IOException("StudyInstanceUID already exists");
+                        }
                         Diagnose diagnose = new Diagnose();
                         diagnose.setStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"));
-                        if (!diagnoseRepository.existsByStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"))) {
-                            diagnoseRepository.save(diagnose);
-                        }
+                        diagnoseRepository.save(diagnose);
+                        //save studyInstanceUID vào bảng chuẩn đoán
+//                        Diagnose diagnose = new Diagnose();
+//                        diagnose.setStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"));
+//                        if (!diagnoseRepository.existsByStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"))) {
+//                            diagnoseRepository.save(diagnose);
+//                        }
                         return studySeriesInstanceIdsFromXmlResponse;
                     } else {
                         throw new IOException("Upload failed. Status: " + statusCode + ". Response: " + responseBody);
@@ -293,7 +300,7 @@ public ResponseEntity<byte[]> getInstancesImage(String studyInstanceUID, String 
                 imageEntity,
                 byte[].class
         );
-        System.out.println("response rrrrrr: "+imageResponse);
+
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(imageResponse.getBody());
@@ -303,7 +310,6 @@ public ResponseEntity<byte[]> getInstancesImage(String studyInstanceUID, String 
         throw new RuntimeException("Error fetching instances: " + e.getMessage());
     }
 }
-
 
     public List<PatientDTO> getPatients() {
         try {
@@ -339,5 +345,102 @@ public ResponseEntity<byte[]> getInstancesImage(String studyInstanceUID, String 
             throw new RuntimeException("Error fetching studies with DICOM tags: " + e.getMessage());
         }
     }
+//
+public List<InstanceDTO> searchForInstances() {
+    try {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Accept", "application/dicom+json");
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        ResponseEntity<String> response = restTemplate.exchange(
+                STOW_RS_URL + "/instances",
+                HttpMethod.GET,
+                entity,
+                String.class
+        );
+        String body = response.getBody();
+        if (response.getStatusCode() == HttpStatus.OK && body != null && !body.isBlank()) {
+            try {
+                List<Attributes> attributesList = parseDicomJsonToAttributes(response.getBody());
+                List<InstanceDTO> instanceDTOList = new ArrayList<>();
+                for (Attributes attributes : attributesList) {
+                    InstanceDTO instanceDTO = new InstanceDTO();
+                    instanceDTO.setReferencedSopInstanceUID(attributes.getString(Tag.ReferencedSOPInstanceUID));
+                    instanceDTO.setInstanceNumber(attributes.getString(Tag.InstanceNumber));
+                    instanceDTO.setSopClassUID(attributes.getString(Tag.SOPClassUID));
+                    instanceDTO.setSopInstanceUID(attributes.getString(Tag.SOPInstanceUID));
+                    instanceDTO.setStudyInstanceUID(attributes.getString(Tag.StudyInstanceUID));
+                    instanceDTO.setSeriesInstanceUID(attributes.getString(Tag.SeriesInstanceUID));
+                    instanceDTO.setPixelData(attributes.getString(Tag.PixelData));
+                    instanceDTO.setInstanceCreationDate(attributes.getDate(Tag.InstanceCreationDate));
+                    instanceDTO.setInstanceCreationTime(attributes.getDate(Tag.InstanceCreationTime));
 
+                    instanceDTOList.add(instanceDTO);
+                }
+                return instanceDTOList;
+
+            } catch (Exception e) {
+                System.err.println("Error parsing DICOM JSON: " + e.getMessage());
+                System.err.println("Response body: " + body);
+                throw new RuntimeException("Error parsing DICOM JSON: " + e.getMessage());
+            }
+        } else if (response.getStatusCode() == HttpStatus.NO_CONTENT || body == null || body.isBlank()) {
+            // Không có instance nào, trả về list rỗng
+            return Collections.emptyList();
+        } else {
+            throw new RuntimeException("Failed to fetch instances: " + response.getStatusCode());
+        }
+    } catch (Exception e) {
+        throw new RuntimeException("Error fetching instances with DICOM tags: " + e.getMessage());
+    }
+}
+    public StudyCountDTO countStudies() {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Accept", "application/json");
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    STOW_RS_URL + "/studies/count",
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+            String body = response.getBody();
+            if (response.getStatusCode() == HttpStatus.OK) {
+                StudyCountDTO countDTO = new StudyCountDTO();
+                JSONObject json = new JSONObject(body);
+                countDTO.setCount(json.getInt("count"));
+                return countDTO;
+            }  else {
+                throw new RuntimeException("Failed to fetch studies count: " + response.getStatusCode());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching studies count with DICOM tags: " + e.getMessage());
+        }
+    }
+    public StudySizeDTO sizeStudies() {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Accept", "application/json");
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    STOW_RS_URL + "/studies/size",
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+            String body = response.getBody();
+            System.out.println("========body: " + body);
+            if (response.getStatusCode() == HttpStatus.OK) {
+                StudySizeDTO studySizeDTO = new StudySizeDTO();
+                JSONObject json = new JSONObject(body);
+                Double sizeMB = json.getDouble("size") / (1000 * 1000);
+                studySizeDTO.setSize((int) Math.round(sizeMB));
+                return studySizeDTO;
+            }  else {
+                throw new RuntimeException("Failed to fetch studies size: " + response.getStatusCode());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching studies size with DICOM tags: " + e.getMessage());
+        }
+    }
 }

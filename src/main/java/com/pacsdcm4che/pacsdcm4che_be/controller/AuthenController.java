@@ -31,8 +31,6 @@ public class AuthenController {
     @Autowired
     private JwtTokenProvider tokenProvider;
 
-
-
 //    @PostMapping("/register")
 //    public ResponseEntity<UserEntity> registerUser(@RequestBody @Valid UserEntity user) {
 //        return userService.createUser(user);
@@ -73,5 +71,13 @@ public class AuthenController {
     public ResponseEntity<?> registerUser(@RequestBody CreateUserRequestDTO signUpRequest) {
         return ResponseEntity.ok(userService.signUp(signUpRequest));
     }
-
+    @GetMapping("/getusername/{token}")
+    public String getUserInfo(@PathVariable String token) {
+        return tokenProvider.getUsernameFromJWT(token);
+    }
+    @GetMapping("/getuser/{username}")
+    public ResponseEntity<?> getRoleByUsername(@PathVariable String username) {
+        CreateUserRequestDTO userFound =  userService.getUserByUsername(username);
+        return ResponseEntity.ok(userFound);
+    }
 }

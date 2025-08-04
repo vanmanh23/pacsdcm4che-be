@@ -6,6 +6,8 @@ import com.pacsdcm4che.pacsdcm4che_be.repository.DiagnoseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class DiagnoseService {
     @Autowired
@@ -17,5 +19,8 @@ public class DiagnoseService {
             diagnose.setDescription(diagnose.getDescription());
             return diagnoseRepository.save(diagnose);
 
+    }
+    public List<DiagnoseDTO> getAllDiagnose(){
+        return diagnoseRepository.findAll().stream().map(diagnose -> new DiagnoseDTO(diagnose.getId(), diagnose.getDescription(), diagnose.getStudyId())).toList();
     }
 }

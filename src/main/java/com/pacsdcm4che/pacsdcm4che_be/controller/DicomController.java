@@ -93,4 +93,40 @@ public ResponseEntity<byte[]> getInstanceImages(
         Diagnose createdDiagnose = diagnoseService.updateDescription(diagnoseDTO);
         return new ResponseEntity<>(createdDiagnose, HttpStatus.OK);
     }
+    @GetMapping("/instances")
+    public ResponseEntity<?> getInstances () {
+        try {
+            List<InstanceDTO> instancesList = dicomClientService.searchForInstances();
+            return ResponseEntity.ok(instancesList);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @GetMapping("/studies/count")
+    public ResponseEntity<?> getStudyCount() {
+        try {
+            StudyCountDTO res = dicomClientService.countStudies();
+            return ResponseEntity.ok(res);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @GetMapping("/studies/size")
+    public ResponseEntity<?> getStudySize() {
+        try {
+            StudySizeDTO res = dicomClientService.sizeStudies();
+            return ResponseEntity.ok(res);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    @GetMapping("/diagnoses")
+    public ResponseEntity<?> findAllDiagnose() {
+        try {
+            List<DiagnoseDTO> res = diagnoseService.getAllDiagnose();
+            return ResponseEntity.ok(res);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
