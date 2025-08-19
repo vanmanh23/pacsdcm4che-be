@@ -67,12 +67,12 @@ public class DicomController {
         }
     }
 @GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{instanceUID}/images")
-public ResponseEntity<byte[]> getInstanceImages(
+public ResponseEntity<List<String>> getInstanceImages(
         @PathVariable String studyInstanceUID,
         @PathVariable String seriesInstanceUID,
         @PathVariable String instanceUID) {
     try {
-        ResponseEntity<byte[]> respon = dicomClientService.getInstancesImage(studyInstanceUID, seriesInstanceUID, instanceUID);
+        ResponseEntity<List<String>> respon = dicomClientService.getInstancesImage(studyInstanceUID, seriesInstanceUID, instanceUID);
         return respon;
     } catch (Exception e) {
         return ResponseEntity.internalServerError().build();
@@ -88,7 +88,7 @@ public ResponseEntity<byte[]> getInstanceImages(
         }
     }
 
-    @PutMapping ("/diagnose")
+    @PutMapping("/diagnose")
     public ResponseEntity<Diagnose> createDiagnose(@RequestBody DiagnoseDTO diagnoseDTO) {
         Diagnose createdDiagnose = diagnoseService.updateDescription(diagnoseDTO);
         return new ResponseEntity<>(createdDiagnose, HttpStatus.OK);
@@ -128,5 +128,10 @@ public ResponseEntity<byte[]> getInstanceImages(
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
+    }
+    @GetMapping("/diagnoses/{studyUID}")
+    public ResponseEntity<?> getDiagnoseByStudyUID(@PathVariable String studyUID) {
+        Diagnose res = diagnoseService.getDiagnoseByStudyId(studyUID);
+        return ResponseEntity.ok(res);
     }
 }

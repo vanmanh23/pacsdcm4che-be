@@ -1,6 +1,7 @@
 package com.pacsdcm4che.pacsdcm4che_be.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pacsdcm4che.pacsdcm4che_be.dtos.*;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Diagnose;
@@ -78,11 +79,12 @@ public class DicomClientService {
                         }
                         if (diagnoseRepository.existsByStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"))) {
                             System.out.println("StudyInstanceUID already exists");
-                            throw new IOException("StudyInstanceUID already exists");
+                        }else {
+                            Diagnose diagnose = new Diagnose();
+                            diagnose.setStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"));
+                            diagnoseRepository.save(diagnose);
                         }
-                        Diagnose diagnose = new Diagnose();
-                        diagnose.setStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"));
-                        diagnoseRepository.save(diagnose);
+
                         //save studyInstanceUID vào bảng chuẩn đoán
 //                        Diagnose diagnose = new Diagnose();
 //                        diagnose.setStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"));
@@ -288,22 +290,42 @@ private Map<String, String> extractStudySeriesInstanceIdsFromXmlResponse(String 
     }
 
 
-public ResponseEntity<byte[]> getInstancesImage(String studyInstanceUID, String seriesInstanceUID , String instanceUID) {
+public ResponseEntity<List<String>> getInstancesImage(String studyInstanceUID, String seriesInstanceUID , String instanceUID) {
     try {
         HttpHeaders imageHeaders = new HttpHeaders();
-        imageHeaders.set("Accept", "image/jpeg");
+//        imageHeaders.set("Accept", "image/jpeg");
+        imageHeaders.set("Accept", "application/json");
         HttpEntity<Void> imageEntity = new HttpEntity<>(imageHeaders);
 
-        ResponseEntity<byte[]> imageResponse = restTemplate.exchange(
-                STOW_RS_URL + "/studies/" + studyInstanceUID + "/series/" + seriesInstanceUID + "/instances/" + instanceUID + "/rendered",
+        ResponseEntity<String> imageResponse = restTemplate.exchange(
+                STOW_RS_URL + "/studies/" + studyInstanceUID + "/series/" + seriesInstanceUID + "/instances/" + instanceUID + "/metadata",
+//                STOW_RS_URL + "/studies/" + studyInstanceUID + "/series/" + seriesInstanceUID + "/instances/" + instanceUID + "/rendered",
                 HttpMethod.GET,
                 imageEntity,
-                byte[].class
+                String.class
+//                byte[].class
         );
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(imageResponse.getBody());
+        JsonNode firstObj = root.get(0);
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
-                .body(imageResponse.getBody());
+        int numberOfFrames = 1; // mặc định single-frame
+        if (firstObj.has("00280008")) {
+            numberOfFrames = firstObj.get("00280008").get("Value").get(0).asInt();
+        }
+
+        // Tạo danh sách URL frames
+        List<String> frameUrls = new ArrayList<>();
+        for (int i = 1; i <= numberOfFrames; i++) {
+            String url = STOW_RS_URL + "/studies/" + studyInstanceUID
+                    + "/series/" + seriesInstanceUID
+                    + "/instances/" + instanceUID
+                    + "/frames/" + i + "/rendered";
+            frameUrls.add(url);
+        }
+
+        // Trả list URL về dạng JSON
+        return ResponseEntity.ok(frameUrls);
 
     } catch (Exception e) {
         e.printStackTrace();

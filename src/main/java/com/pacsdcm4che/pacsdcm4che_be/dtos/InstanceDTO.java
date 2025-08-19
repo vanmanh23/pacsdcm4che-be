@@ -14,7 +14,6 @@ public class InstanceDTO {
     private String pixelData;
     private Date instanceCreationDate;
     private Date instanceCreationTime;
-
     public String getReferencedSopInstanceUID() {
         return referencedSopInstanceUID;
     }
