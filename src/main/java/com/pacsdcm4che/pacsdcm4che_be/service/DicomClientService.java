@@ -79,6 +79,7 @@ public class DicomClientService {
                         }
                         if (diagnoseRepository.existsByStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"))) {
                             System.out.println("StudyInstanceUID already exists");
+//                            throw new IOException("Dicom file already exists");
                         }else {
                             Diagnose diagnose = new Diagnose();
                             diagnose.setStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"));
@@ -344,7 +345,6 @@ public ResponseEntity<List<String>> getInstancesImage(String studyInstanceUID, S
                     entity,
                     String.class
             );
-            System.out.println("----------------------------: ");
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 List<Attributes> attributesList = parseDicomJsonToAttributes(response.getBody());
                 List<PatientDTO> patientDTOList = new ArrayList<>();
