@@ -44,10 +44,14 @@ public class DiagnoseDTO {
     public void setId(Long id) {
         this.id = id;
     }
+<<<<<<< HEAD
 =======
     public DiagnoseDTO(String description, String studyId) {
         this.description = description;
         this.studyId = studyId;
     }
 >>>>>>> df72f9ae2dffacf61b7b12492d1966965f0b9850
+=======
+
+>>>>>>> dev
 }

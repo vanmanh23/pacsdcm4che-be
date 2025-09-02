@@ -17,6 +17,10 @@ public class UserEntity {
     private String username;
     @Column(name = "password", nullable = false)
     private String password;
+    @Column(name = "phone_number", nullable = false)
+    private String phoneNumber;
+    @Column(name = "email", nullable = false)
+    private String email;
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(  name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -59,5 +63,21 @@ public class UserEntity {
 
     public void setRoles(Set<Role> roles) {
         this.roles = roles;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

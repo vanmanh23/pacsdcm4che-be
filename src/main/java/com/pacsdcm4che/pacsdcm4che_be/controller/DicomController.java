@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.*;
 
 @RestController
@@ -67,13 +66,29 @@ public class DicomController {
             return ResponseEntity.internalServerError().build();
         }
     }
+    @GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{instanceUID}/images")
+    public ResponseEntity<List<String>> getInstanceImages(
+            @PathVariable String studyInstanceUID,
+            @PathVariable String seriesInstanceUID,
+            @PathVariable String instanceUID) {
+        try {
+            ResponseEntity<List<String>> respon = dicomClientService.getInstancesImage(studyInstanceUID, seriesInstanceUID, instanceUID);
+            return respon;
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
     @GetMapping("/patients")
     public ResponseEntity<?> getPatients () {
+        try {
             List<PatientDTO> patientsList = dicomClientService.getPatients();
             return ResponseEntity.ok(patientsList);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
-    @PutMapping ("/diagnose")
+    @PutMapping("/diagnose")
     public ResponseEntity<Diagnose> createDiagnose(@RequestBody DiagnoseDTO diagnoseDTO) {
         Diagnose createdDiagnose = diagnoseService.updateDescription(diagnoseDTO);
         return new ResponseEntity<>(createdDiagnose, HttpStatus.OK);
@@ -113,5 +128,10 @@ public class DicomController {
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
         }
+    }
+    @GetMapping("/diagnoses/{studyUID}")
+    public ResponseEntity<?> getDiagnoseByStudyUID(@PathVariable String studyUID) {
+        Diagnose res = diagnoseService.getDiagnoseByStudyId(studyUID);
+        return ResponseEntity.ok(res);
     }
 }

@@ -17,11 +17,14 @@ public class DiagnoseService {
     public Diagnose updateDescription(DiagnoseDTO diagnoseDTO) {
             Diagnose diagnose = diagnoseRepository.findByStudyId(diagnoseDTO.getStudyId())
                     .orElseThrow(() -> new RuntimeException("Diagnose not found for study ID: " + diagnoseDTO.getStudyId()));
-            diagnose.setDescription(diagnose.getDescription());
+            diagnose.setDescription(diagnoseDTO.getDescription());
             return diagnoseRepository.save(diagnose);
 
     }
     public List<DiagnoseDTO> getAllDiagnose(){
         return diagnoseRepository.findAll().stream().map(diagnose -> new DiagnoseDTO(diagnose.getId(), diagnose.getDescription(), diagnose.getStudyId())).toList();
+    }
+    public Diagnose getDiagnoseByStudyId(String studyId) {
+        return diagnoseRepository.findByStudyId(studyId).orElseThrow(() -> new RuntimeException("Diagnose not found for study ID: " + studyId));
     }
 }

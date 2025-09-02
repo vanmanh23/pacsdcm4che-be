@@ -1,11 +1,10 @@
 package com.pacsdcm4che.pacsdcm4che_be.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pacsdcm4che.pacsdcm4che_be.dtos.*;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Diagnose;
-import com.pacsdcm4che.pacsdcm4che_be.exception.BusinessException;
-import com.pacsdcm4che.pacsdcm4che_be.exception.ResourceNotFoundException;
 import com.pacsdcm4che.pacsdcm4che_be.repository.DiagnoseRepository;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -47,81 +46,84 @@ public class DicomClientService {
         this.restTemplate = restTemplate;
     }
 
-        public Map<String, String>  uploadDicomFile(MultipartFile dicomFile) throws IOException {
+    public Map<String, String>  uploadDicomFile(MultipartFile dicomFile) throws IOException {
 
-            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
 
-                String boundary = "----Boundary" + System.currentTimeMillis();
-                HttpPost postRequest = new HttpPost(STOW_RS_URL + "/studies");
+            String boundary = "----Boundary" + System.currentTimeMillis();
+            HttpPost postRequest = new HttpPost(STOW_RS_URL + "/studies");
 
-                postRequest.setHeader("Content-Type",
-                        "multipart/related; type=\"application/dicom\"; boundary=" + boundary);
-                InputStream inputStream = dicomFile.getInputStream();
+            postRequest.setHeader("Content-Type",
+                    "multipart/related; type=\"application/dicom\"; boundary=" + boundary);
+            InputStream inputStream = dicomFile.getInputStream();
 
-                MultipartEntityBuilder builder = MultipartEntityBuilder.create();
-                builder.setBoundary(boundary);
-                builder.setMimeSubtype("related");
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            builder.setBoundary(boundary);
+            builder.setMimeSubtype("related");
 
-                builder.addBinaryBody(
-                        "dicomfile",
-                        inputStream,
-                        ContentType.create("application/dicom"),
-                        dicomFile.getOriginalFilename()
-                );
-                postRequest.setEntity(builder.build());
-                try (CloseableHttpResponse response = httpClient.execute(postRequest)) {
-                    int statusCode = response.getStatusLine().getStatusCode();
-                    String responseBody = EntityUtils.toString(response.getEntity());
-                    if (statusCode >= 200 && statusCode < 300) {
-                        // Trích xuất studyInstanceUID từ response nếu có
-                        Map<String,String> studySeriesInstanceIdsFromXmlResponse =extractStudySeriesInstanceIdsFromXmlResponse(responseBody);
-                        if (studySeriesInstanceIdsFromXmlResponse == null) {
-                            throw new IOException("No studyInstanceUID found in response");
-                        }
-                        if (diagnoseRepository.existsByStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"))) {
-                            System.out.println("StudyInstanceUID already exists");
-                            throw new IOException("StudyInstanceUID already exists");
-                        }
+            builder.addBinaryBody(
+                    "dicomfile",
+                    inputStream,
+                    ContentType.create("application/dicom"),
+                    dicomFile.getOriginalFilename()
+            );
+            postRequest.setEntity(builder.build());
+            try (CloseableHttpResponse response = httpClient.execute(postRequest)) {
+                int statusCode = response.getStatusLine().getStatusCode();
+                String responseBody = EntityUtils.toString(response.getEntity());
+                if (statusCode >= 200 && statusCode < 300) {
+                    // Trích xuất studyInstanceUID từ response nếu có
+                    Map<String,String> studySeriesInstanceIdsFromXmlResponse =extractStudySeriesInstanceIdsFromXmlResponse(responseBody);
+                    if (studySeriesInstanceIdsFromXmlResponse == null) {
+                        throw new IOException("No studyInstanceUID found in response");
+                    }
+                    if (diagnoseRepository.existsByStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"))) {
+                        System.out.println("StudyInstanceUID already exists");
+//                            throw new IOException("Dicom file already exists");
+                    }else {
                         Diagnose diagnose = new Diagnose();
                         diagnose.setStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"));
                         diagnoseRepository.save(diagnose);
-                        //save studyInstanceUID vào bảng chuẩn đoán
+                    }
+
+                    //save studyInstanceUID vào bảng chuẩn đoán
 //                        Diagnose diagnose = new Diagnose();
 //                        diagnose.setStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"));
 //                        if (!diagnoseRepository.existsByStudyId(studySeriesInstanceIdsFromXmlResponse.get("studyInstanceUID"))) {
 //                            diagnoseRepository.save(diagnose);
 //                        }
-                        return studySeriesInstanceIdsFromXmlResponse;
-                    } else {
-                        throw new BusinessException("Upload image to pacs failed. Status: " + statusCode + ". Response: " + responseBody);
-                    }
+                    return studySeriesInstanceIdsFromXmlResponse;
+                } else {
+                    throw new IOException("Upload failed. Status: " + statusCode + ". Response: " + responseBody);
                 }
             }
         }
-private Map<String, String> extractStudySeriesInstanceIdsFromXmlResponse(String responseBody) {
-    try {
-        // Regex to find studies/<UID>/series/<UID>/instances/<UID>
-        Pattern pattern = Pattern.compile("rs/studies/([0-9.]+)/series/([0-9.]+)/instances/([0-9.]+)");
-        Matcher matcher = pattern.matcher(responseBody);
-
-        if (matcher.find()) {
-            Map<String, String> ids = new HashMap<>();
-            ids.put("studyInstanceUID", matcher.group(1));
-            ids.put("seriesInstanceUID", matcher.group(2));
-            ids.put("instanceUID", matcher.group(3));
-            return ids;
-        }
-    } catch (Exception e) {
-        throw new BusinessException("Error extracting study/series/instance UIDs from response: " + e.getMessage());
     }
-    return null;
-}
+    private Map<String, String> extractStudySeriesInstanceIdsFromXmlResponse(String responseBody) {
+        try {
+            // Regex to find studies/<UID>/series/<UID>/instances/<UID>
+            Pattern pattern = Pattern.compile("rs/studies/([0-9.]+)/series/([0-9.]+)/instances/([0-9.]+)");
+            Matcher matcher = pattern.matcher(responseBody);
+
+            if (matcher.find()) {
+                Map<String, String> ids = new HashMap<>();
+                ids.put("studyInstanceUID", matcher.group(1));
+                ids.put("seriesInstanceUID", matcher.group(2));
+                ids.put("instanceUID", matcher.group(3));
+                return ids;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     private List<Attributes> parseDicomJsonToAttributes(String jsonResponse) {
         List<Attributes> attributesList = new ArrayList<>();
-        ObjectMapper mapper = new ObjectMapper();
 
         try {
+            ObjectMapper mapper = new ObjectMapper();
+
             // Parse chuỗi JSON thành List<Map<String, Object>>
             List<Map<String, Object>> dicomJsonList = mapper.readValue(
                     jsonResponse,
@@ -136,7 +138,7 @@ private Map<String, String> extractStudySeriesInstanceIdsFromXmlResponse(String 
         } catch (Exception e) {
             System.err.println("Error parsing DICOM JSON: " + e.getMessage());
             System.err.println("Full response body: " + jsonResponse);
-            throw new BusinessException("Error parsing DICOM JSON" + e.getMessage());
+            throw new RuntimeException("Error parsing DICOM JSON", e);
         }
         return attributesList;
     }
@@ -157,6 +159,7 @@ private Map<String, String> extractStudySeriesInstanceIdsFromXmlResponse(String 
             );
             String body = response.getBody();
             if (response.getStatusCode() == HttpStatus.OK && body != null && !body.isBlank()) {
+                try {
                     List<Attributes> attributesList = parseDicomJsonToAttributes(body);
                     List<StudyDTO> studyDTOList = new ArrayList<>();
                     for (Attributes attributes : attributesList) {
@@ -183,14 +186,19 @@ private Map<String, String> extractStudySeriesInstanceIdsFromXmlResponse(String 
                     return studyDTOList;
 
 
+                } catch (Exception e) {
+                    System.err.println("Error parsing DICOM JSON: " + e.getMessage());
+                    System.err.println("Response body: " + body);
+                    throw new RuntimeException("Error parsing DICOM JSON: " + e.getMessage());
+                }
             } else if (response.getStatusCode() == HttpStatus.NO_CONTENT || body == null || body.isBlank()) {
                 return Collections.emptyList();
             } else {
-                throw new BusinessException("Failed to fetch instances. HTTP status from Pacs: " + response.getStatusCode());
+                throw new RuntimeException("Failed to fetch instances: " + response.getStatusCode());
             }
         } catch (Exception e) {
             e.printStackTrace();
-            throw new BusinessException("Error fetching study by UID: " + e.getMessage());
+            throw new RuntimeException("Error fetching study by UID: " + e.getMessage());
         }
     }
 
@@ -225,10 +233,10 @@ private Map<String, String> extractStudySeriesInstanceIdsFromXmlResponse(String 
                 }
                 return seriesDTOList;
             } else {
-                throw new RuntimeException("Failed to fetch series. HTTP status from Pacs: " + response.getStatusCode());
+                throw new RuntimeException("Failed to fetch series: " + response.getStatusCode());
             }
         } catch (Exception e) {
-            throw new BusinessException("Error fetching series by study UID: " + e.getMessage());
+            throw new RuntimeException("Error fetching series by study UID: " + e.getMessage());
         }
     }
 
@@ -274,48 +282,57 @@ private Map<String, String> extractStudySeriesInstanceIdsFromXmlResponse(String 
                 // Không có instance nào, trả về list rỗng
                 return Collections.emptyList();
             } else {
-                throw new BusinessException("Failed to fetch instances. HTTP status from Pacs " + response.getStatusCode());
+                throw new RuntimeException("Failed to fetch instances: " + response.getStatusCode());
             }
         } catch (Exception e) {
             e.printStackTrace();
-            throw new BusinessException("Error fetching instances: " + e.getMessage());
+            throw new RuntimeException("Error fetching instances: " + e.getMessage());
         }
     }
 
 
-public ResponseEntity<byte[]> getInstancesImage(String studyInstanceUID, String seriesInstanceUID , String instanceUID) {
-    try {
-        HttpHeaders imageHeaders = new HttpHeaders();
-        imageHeaders.set("Accept", "image/jpeg");
-        HttpEntity<Void> imageEntity = new HttpEntity<>(imageHeaders);
+    public ResponseEntity<List<String>> getInstancesImage(String studyInstanceUID, String seriesInstanceUID , String instanceUID) {
         try {
-            ResponseEntity<byte[]> imageResponse = restTemplate.exchange(
-                    STOW_RS_URL + "/studies/" + studyInstanceUID + "/series/" + seriesInstanceUID + "/instances/" + instanceUID + "/rendered",
+            HttpHeaders imageHeaders = new HttpHeaders();
+//        imageHeaders.set("Accept", "image/jpeg");
+            imageHeaders.set("Accept", "application/json");
+            HttpEntity<Void> imageEntity = new HttpEntity<>(imageHeaders);
+
+            ResponseEntity<String> imageResponse = restTemplate.exchange(
+                    STOW_RS_URL + "/studies/" + studyInstanceUID + "/series/" + seriesInstanceUID + "/instances/" + instanceUID + "/metadata",
+//                STOW_RS_URL + "/studies/" + studyInstanceUID + "/series/" + seriesInstanceUID + "/instances/" + instanceUID + "/rendered",
                     HttpMethod.GET,
                     imageEntity,
-                    byte[].class
+                    String.class
+//                byte[].class
             );
-            return ResponseEntity.ok()
-                    .contentType(MediaType.IMAGE_JPEG)
-                    .body(imageResponse.getBody());
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(imageResponse.getBody());
+            JsonNode firstObj = root.get(0);
 
-        ResponseEntity<byte[]> imageResponse = restTemplate.exchange(
-                STOW_RS_URL + "/studies/" + studyInstanceUID + "/series/" + seriesInstanceUID + "/instances/" + instanceUID + "/rendered",
-                HttpMethod.GET,
-                imageEntity,
-                byte[].class
-        );
+            int numberOfFrames = 1; // mặc định single-frame
+            if (firstObj.has("00280008")) {
+                numberOfFrames = firstObj.get("00280008").get("Value").get(0).asInt();
+            }
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
-                .body(imageResponse.getBody());
+            // Tạo danh sách URL frames
+            List<String> frameUrls = new ArrayList<>();
+            for (int i = 1; i <= numberOfFrames; i++) {
+                String url = STOW_RS_URL + "/studies/" + studyInstanceUID
+                        + "/series/" + seriesInstanceUID
+                        + "/instances/" + instanceUID
+                        + "/frames/" + i + "/rendered";
+                frameUrls.add(url);
+            }
 
-    } catch (Exception e) {
-        e.printStackTrace();
-        throw new RuntimeException("Error fetching instances: " + e.getMessage());
+            // Trả list URL về dạng JSON
+            return ResponseEntity.ok(frameUrls);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Error fetching instances: " + e.getMessage());
+        }
     }
-    }
-
 
     public List<PatientDTO> getPatients() {
         try {
@@ -344,59 +361,60 @@ public ResponseEntity<byte[]> getInstancesImage(String studyInstanceUID, String 
             } else if (response.getStatusCode() == HttpStatus.NO_CONTENT || response.getBody() == null || response.getBody().isBlank()) {
                 return Collections.emptyList();
             } else {
-                throw new BusinessException("Failed to fetch studies. HTTP status from pacs " + response.getStatusCode());
+                throw new RuntimeException("Failed to fetch studies: " + response.getStatusCode());
             }
         } catch (Exception e) {
-            throw new BusinessException("Error fetching studies with DICOM tags: " + e.getMessage());
+            throw new RuntimeException("Error fetching studies with DICOM tags: " + e.getMessage());
         }
     }
-public List<InstanceDTO> searchForInstances() {
-    try {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Accept", "application/dicom+json");
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-        ResponseEntity<String> response = restTemplate.exchange(
-                STOW_RS_URL + "/instances",
-                HttpMethod.GET,
-                entity,
-                String.class
-        );
-        String body = response.getBody();
-        if (response.getStatusCode() == HttpStatus.OK && body != null && !body.isBlank()) {
-            try {
-                List<Attributes> attributesList = parseDicomJsonToAttributes(response.getBody());
-                List<InstanceDTO> instanceDTOList = new ArrayList<>();
-                for (Attributes attributes : attributesList) {
-                    InstanceDTO instanceDTO = new InstanceDTO();
-                    instanceDTO.setReferencedSopInstanceUID(attributes.getString(Tag.ReferencedSOPInstanceUID));
-                    instanceDTO.setInstanceNumber(attributes.getString(Tag.InstanceNumber));
-                    instanceDTO.setSopClassUID(attributes.getString(Tag.SOPClassUID));
-                    instanceDTO.setSopInstanceUID(attributes.getString(Tag.SOPInstanceUID));
-                    instanceDTO.setStudyInstanceUID(attributes.getString(Tag.StudyInstanceUID));
-                    instanceDTO.setSeriesInstanceUID(attributes.getString(Tag.SeriesInstanceUID));
-                    instanceDTO.setPixelData(attributes.getString(Tag.PixelData));
-                    instanceDTO.setInstanceCreationDate(attributes.getDate(Tag.InstanceCreationDate));
-                    instanceDTO.setInstanceCreationTime(attributes.getDate(Tag.InstanceCreationTime));
+    //
+    public List<InstanceDTO> searchForInstances() {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Accept", "application/dicom+json");
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    STOW_RS_URL + "/instances",
+                    HttpMethod.GET,
+                    entity,
+                    String.class
+            );
+            String body = response.getBody();
+            if (response.getStatusCode() == HttpStatus.OK && body != null && !body.isBlank()) {
+                try {
+                    List<Attributes> attributesList = parseDicomJsonToAttributes(response.getBody());
+                    List<InstanceDTO> instanceDTOList = new ArrayList<>();
+                    for (Attributes attributes : attributesList) {
+                        InstanceDTO instanceDTO = new InstanceDTO();
+                        instanceDTO.setReferencedSopInstanceUID(attributes.getString(Tag.ReferencedSOPInstanceUID));
+                        instanceDTO.setInstanceNumber(attributes.getString(Tag.InstanceNumber));
+                        instanceDTO.setSopClassUID(attributes.getString(Tag.SOPClassUID));
+                        instanceDTO.setSopInstanceUID(attributes.getString(Tag.SOPInstanceUID));
+                        instanceDTO.setStudyInstanceUID(attributes.getString(Tag.StudyInstanceUID));
+                        instanceDTO.setSeriesInstanceUID(attributes.getString(Tag.SeriesInstanceUID));
+                        instanceDTO.setPixelData(attributes.getString(Tag.PixelData));
+                        instanceDTO.setInstanceCreationDate(attributes.getDate(Tag.InstanceCreationDate));
+                        instanceDTO.setInstanceCreationTime(attributes.getDate(Tag.InstanceCreationTime));
 
-                    instanceDTOList.add(instanceDTO);
+                        instanceDTOList.add(instanceDTO);
+                    }
+                    return instanceDTOList;
+
+                } catch (Exception e) {
+                    System.err.println("Error parsing DICOM JSON: " + e.getMessage());
+                    System.err.println("Response body: " + body);
+                    throw new RuntimeException("Error parsing DICOM JSON: " + e.getMessage());
                 }
-                return instanceDTOList;
-
-            } catch (Exception e) {
-                System.err.println("Error parsing DICOM JSON: " + e.getMessage());
-                System.err.println("Response body: " + body);
-                throw new RuntimeException("Error parsing DICOM JSON: " + e.getMessage());
+            } else if (response.getStatusCode() == HttpStatus.NO_CONTENT || body == null || body.isBlank()) {
+                // Không có instance nào, trả về list rỗng
+                return Collections.emptyList();
+            } else {
+                throw new RuntimeException("Failed to fetch instances: " + response.getStatusCode());
             }
-        } else if (response.getStatusCode() == HttpStatus.NO_CONTENT || body == null || body.isBlank()) {
-            // Không có instance nào, trả về list rỗng
-            return Collections.emptyList();
-        } else {
-            throw new RuntimeException("Failed to fetch instances: " + response.getStatusCode());
+        } catch (Exception e) {
+            throw new RuntimeException("Error fetching instances with DICOM tags: " + e.getMessage());
         }
-    } catch (Exception e) {
-        throw new RuntimeException("Error fetching instances with DICOM tags: " + e.getMessage());
     }
-}
     public StudyCountDTO countStudies() {
         try {
             HttpHeaders headers = new HttpHeaders();

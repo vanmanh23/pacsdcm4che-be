@@ -15,7 +15,10 @@ public class InstanceDTO {
     private Date instanceCreationDate;
     private Date instanceCreationTime;
 <<<<<<< HEAD
+<<<<<<< HEAD
 
+=======
+>>>>>>> dev
     public String getReferencedSopInstanceUID() {
         return referencedSopInstanceUID;
     }

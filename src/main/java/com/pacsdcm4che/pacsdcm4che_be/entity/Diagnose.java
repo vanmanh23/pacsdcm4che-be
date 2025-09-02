@@ -9,16 +9,13 @@ public class Diagnose {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "description")//
+    @Column(name = "description")
     private String description;
-
     @Column(name = "study_id", nullable = false, unique = true)
 
     private String studyId;
-
     public Diagnose() {
     }
-
     public Diagnose(String description, String studyId) {
         this.description = description;
         this.studyId = studyId;
@@ -47,4 +44,5 @@ public class Diagnose {
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
+
 }
