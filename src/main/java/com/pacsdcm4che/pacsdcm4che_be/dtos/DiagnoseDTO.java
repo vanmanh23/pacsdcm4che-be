@@ -3,7 +3,10 @@ import lombok.Data;
 
 @Data
 public class DiagnoseDTO {
+<<<<<<< HEAD
     private Long id;
+=======
+>>>>>>> df72f9ae2dffacf61b7b12492d1966965f0b9850
     private String description;
 
     private String studyId;
@@ -11,6 +14,7 @@ public class DiagnoseDTO {
     public DiagnoseDTO() {
     }
 
+<<<<<<< HEAD
     public DiagnoseDTO(Long id, String description, String studyId) {
         this.id = id;
         this.description = description;
@@ -40,4 +44,10 @@ public class DiagnoseDTO {
     public void setId(Long id) {
         this.id = id;
     }
+=======
+    public DiagnoseDTO(String description, String studyId) {
+        this.description = description;
+        this.studyId = studyId;
+    }
+>>>>>>> df72f9ae2dffacf61b7b12492d1966965f0b9850
 }

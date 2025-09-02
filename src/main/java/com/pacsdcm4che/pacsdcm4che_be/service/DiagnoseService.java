@@ -2,6 +2,7 @@ package com.pacsdcm4che.pacsdcm4che_be.service;
 
 import com.pacsdcm4che.pacsdcm4che_be.dtos.DiagnoseDTO;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Diagnose;
+import com.pacsdcm4che.pacsdcm4che_be.exception.ResourceNotFoundException;
 import com.pacsdcm4che.pacsdcm4che_be.repository.DiagnoseRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

@@ -13,6 +13,7 @@ public class Diagnose {
     private String description;
 
     @Column(name = "study_id", nullable = false, unique = true)
+
     private String studyId;
 
     public Diagnose() {

@@ -4,6 +4,7 @@ import com.pacsdcm4che.pacsdcm4che_be.dtos.CreateUserRequestDTO;
 import com.pacsdcm4che.pacsdcm4che_be.entity.ERole;
 import com.pacsdcm4che.pacsdcm4che_be.entity.Role;
 import com.pacsdcm4che.pacsdcm4che_be.entity.UserEntity;
+import com.pacsdcm4che.pacsdcm4che_be.exception.BusinessException;
 import com.pacsdcm4che.pacsdcm4che_be.exception.ResourceNotFoundException;
 import com.pacsdcm4che.pacsdcm4che_be.repository.RoleRepository;
 import com.pacsdcm4che.pacsdcm4che_be.repository.UserRepository;
@@ -17,6 +18,7 @@ import java.util.Set;
 
 @Service
 public class UserService {
+
     @Autowired
     private UserRepository userRepository;
 
@@ -39,7 +41,6 @@ public class UserService {
         }
         return (UserEntity) userRepository.findByUsername(username).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
-
     public List<UserEntity> getAllUsers() {
         if (userRepository.count() == 0) {
             throw new ResourceNotFoundException("No users found");
@@ -51,7 +52,6 @@ public class UserService {
         UserEntity newUser = userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
         newUser.setUsername(user.getUsername());
         newUser.setPassword(user.getPassword());
-
         return userRepository.save(newUser);
     }
 
@@ -110,3 +110,4 @@ public class UserService {
         return createUserRequestDTO;
     }
 }
+

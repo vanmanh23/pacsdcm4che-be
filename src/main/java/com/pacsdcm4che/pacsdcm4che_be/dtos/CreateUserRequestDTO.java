@@ -11,6 +11,7 @@ public class CreateUserRequestDTO {
     private Set<String> role;
     private String phoneNumber;
     private String email;
+<<<<<<< HEAD
 
     public String getUsername() {
         return username;
@@ -51,4 +52,6 @@ public class CreateUserRequestDTO {
     public void setEmail(String email) {
         this.email = email;
     }
+=======
+>>>>>>> df72f9ae2dffacf61b7b12492d1966965f0b9850
 }

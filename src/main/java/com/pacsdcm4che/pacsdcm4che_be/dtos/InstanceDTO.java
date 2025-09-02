@@ -14,6 +14,7 @@ public class InstanceDTO {
     private String pixelData;
     private Date instanceCreationDate;
     private Date instanceCreationTime;
+<<<<<<< HEAD
 
     public String getReferencedSopInstanceUID() {
         return referencedSopInstanceUID;
@@ -86,4 +87,6 @@ public class InstanceDTO {
     public void setInstanceCreationTime(Date instanceCreationTime) {
         this.instanceCreationTime = instanceCreationTime;
     }
+=======
+>>>>>>> df72f9ae2dffacf61b7b12492d1966965f0b9850
 }

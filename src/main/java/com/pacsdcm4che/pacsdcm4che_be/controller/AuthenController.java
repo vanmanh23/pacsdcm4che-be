@@ -43,6 +43,7 @@ public class AuthenController {
     public ResponseEntity<List<UserEntity>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
+
     @PreAuthorize("hasRole('ROLE_ADMIN')")
     @PutMapping("/update/{id}")
     public ResponseEntity<UserEntity> updateUser(@PathVariable Long id, @RequestBody @Valid UserEntity user) {

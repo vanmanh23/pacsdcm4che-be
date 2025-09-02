@@ -13,6 +13,7 @@ public class SeriesDTO {
     private Date seriesDate;
     private Date seriesTime;
     private String studyInstanceUID;
+<<<<<<< HEAD
 
     public String getSeriesInstanceUID() {
         return seriesInstanceUID;
@@ -77,4 +78,6 @@ public class SeriesDTO {
     public void setStudyInstanceUID(String studyInstanceUID) {
         this.studyInstanceUID = studyInstanceUID;
     }
+=======
+>>>>>>> df72f9ae2dffacf61b7b12492d1966965f0b9850
 }

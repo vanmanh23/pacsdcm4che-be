@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
 
 @RestController
@@ -66,26 +67,10 @@ public class DicomController {
             return ResponseEntity.internalServerError().build();
         }
     }
-@GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{instanceUID}/images")
-public ResponseEntity<byte[]> getInstanceImages(
-        @PathVariable String studyInstanceUID,
-        @PathVariable String seriesInstanceUID,
-        @PathVariable String instanceUID) {
-    try {
-        ResponseEntity<byte[]> respon = dicomClientService.getInstancesImage(studyInstanceUID, seriesInstanceUID, instanceUID);
-        return respon;
-    } catch (Exception e) {
-        return ResponseEntity.internalServerError().build();
-    }
-}
     @GetMapping("/patients")
     public ResponseEntity<?> getPatients () {
-        try {
             List<PatientDTO> patientsList = dicomClientService.getPatients();
             return ResponseEntity.ok(patientsList);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
 
     @PutMapping ("/diagnose")

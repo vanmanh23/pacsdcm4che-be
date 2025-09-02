@@ -20,6 +20,7 @@ public class StudyDTO {
     private String patientName;
     private String sex;
     private Date patientBirthDate;
+<<<<<<< HEAD
 
     public String getStudyInstanceUID() {
         return studyInstanceUID;
@@ -132,4 +133,6 @@ public class StudyDTO {
     public void setPatientBirthDate(Date patientBirthDate) {
         this.patientBirthDate = patientBirthDate;
     }
+=======
+>>>>>>> df72f9ae2dffacf61b7b12492d1966965f0b9850
 }
