@@ -38,54 +38,34 @@ public class DicomController {
 
     @GetMapping("/studies/tags")
     public ResponseEntity<?> getStudyTags() {
-        try {
             List<StudyDTO> studyDTOList = dicomClientService.getStudyByUID();
             return ResponseEntity.ok(studyDTOList);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
     @GetMapping("/studies/{studyInstanceUID}/series/tags")
     public ResponseEntity<?> getSeriesTags(@PathVariable String studyInstanceUID) {
-        try {
             List<SeriesDTO> seriesList = dicomClientService.getSeriesByStudyUID(studyInstanceUID);
             return ResponseEntity.ok(seriesList);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
 
     @GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/tags")
     public ResponseEntity<?> getInstanceTags(
             @PathVariable String studyInstanceUID,
             @PathVariable String seriesInstanceUID) {
-        try {
             List<InstanceDTO> instancesList = dicomClientService.getInstancesBySeriesUidAndStudyUid(studyInstanceUID, seriesInstanceUID);
             return ResponseEntity.ok(instancesList);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
     @GetMapping("/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{instanceUID}/images")
     public ResponseEntity<List<String>> getInstanceImages(
             @PathVariable String studyInstanceUID,
             @PathVariable String seriesInstanceUID,
             @PathVariable String instanceUID) {
-        try {
             ResponseEntity<List<String>> respon = dicomClientService.getInstancesImage(studyInstanceUID, seriesInstanceUID, instanceUID);
             return respon;
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
     @GetMapping("/patients")
     public ResponseEntity<?> getPatients () {
-        try {
             List<PatientDTO> patientsList = dicomClientService.getPatients();
             return ResponseEntity.ok(patientsList);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
 
     @PutMapping("/diagnose")
@@ -95,39 +75,23 @@ public class DicomController {
     }
     @GetMapping("/instances")
     public ResponseEntity<?> getInstances () {
-        try {
             List<InstanceDTO> instancesList = dicomClientService.searchForInstances();
             return ResponseEntity.ok(instancesList);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
     @GetMapping("/studies/count")
     public ResponseEntity<?> getStudyCount() {
-        try {
             StudyCountDTO res = dicomClientService.countStudies();
             return ResponseEntity.ok(res);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
     @GetMapping("/studies/size")
     public ResponseEntity<?> getStudySize() {
-        try {
             StudySizeDTO res = dicomClientService.sizeStudies();
             return ResponseEntity.ok(res);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
     @GetMapping("/diagnoses")
     public ResponseEntity<?> findAllDiagnose() {
-        try {
             List<DiagnoseDTO> res = diagnoseService.getAllDiagnose();
             return ResponseEntity.ok(res);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
     }
     @GetMapping("/diagnoses/{studyUID}")
     public ResponseEntity<?> getDiagnoseByStudyUID(@PathVariable String studyUID) {
